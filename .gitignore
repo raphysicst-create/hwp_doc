@@ -1,0 +1,7 @@
+# 자격 증명
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
