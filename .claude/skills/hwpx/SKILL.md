@@ -14,7 +14,7 @@ HWPX는 ZIP 기반 XML 컨테이너(OWPML 표준)이다. 서식 보존이 중요
 
 - `.hwp`로 결과 파일을 만들어 달라는 요청은 거부한다.
 - `.hwp` 원본을 직접 수정하거나 채워 달라는 요청은 거부한다.
-- `.hwp`를 읽어 참고하는 수준은 가능하지만, 결과물은 사용자가 명시적으로 HWPX를 허용한 경우에만 `.hwpx`로 만든다.
+- `.hwp`를 읽어 참고하는 수준은 가능하지만(읽기·변환은 이 스킬이 아니라 kordoc/폴백 담당), 결과물은 사용자가 명시적으로 HWPX를 허용한 경우에만 `.hwpx`로 만든다.
 - 사용자가 `.hwp` 작성을 요청했는데 HWPX 대체 산출물을 명시적으로 허용하지 않았다면, 임의로 `.hwpx` 파일을 만들어 대신 완료 처리하지 않는다.
 - 안내 문구는 간단히 쓴다: "이 스킬은 HWPX만 지원해서 .hwp 작성은 할 수 없습니다. 한글에서 HWPX로 저장한 파일을 주거나, 결과물을 .hwpx로 받는 방식이면 처리할 수 있습니다."
 
@@ -240,6 +240,8 @@ VENV="<프로젝트>/.venv/bin/activate"
 # 프로젝트의 .venv를 활성화 (pip install lxml 필요)
 source "$VENV"
 ```
+
+프로젝트에 `.venv`가 없으면 `source` 단계를 생략하고 시스템 `python3`(lxml 필요)를 그대로 사용한다. Windows venv는 `.venv/Scripts/activate`.
 
 ## 디렉토리 구조
 
@@ -753,7 +755,7 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 10. **build_hwpx.py 우선**: 새 문서 생성은 build_hwpx.py 사용 (python-hwpx API 직접 호출 지양)
 11. **빈 줄**: `<hp:t/>` 사용 (self-closing tag)
 12. **레퍼런스 우선 강제**: 사용자가 HWPX를 첨부하면 반드시 `analyze_template.py` + 추출 XML 기반으로 복원/재작성할 것
-13. **examples 폴더 미사용**: 작업 중 `.claude/skills/hwpx/examples/*` 파일은 읽기/참조/복사에 사용하지 말 것
+13. **examples 폴더 미사용**: 작업 중 `.claude/skills/hwpx/examples/*` 파일은 읽기/참조/복사에 사용하지 말 것 (해당 폴더는 현재 없음. 프로젝트의 knowledge/examples/와는 무관 — 그쪽은 CLAUDE.md에 따라 검색해 사용한다)
 14. **쪽수 동일 필수**: 레퍼런스 기반 작업에서는 최종 결과의 쪽수를 레퍼런스와 동일하게 유지할 것
 15. **무단 페이지 증가 금지**: 사용자 명시 요청/승인 없이 쪽수 증가를 유발하는 구조 변경 금지
 16. **구조 변경 제한**: 사용자 요청이 없는 한 문단/표의 추가·삭제·분할·병합 금지 (치환 중심 편집)

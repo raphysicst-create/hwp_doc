@@ -1,5 +1,7 @@
 # kordoc 통합 검토 노트
 
+> 이 문서는 업스트림(jkf87) 관점의 메모다. 이 프로젝트에서는 kordoc MCP가 `.mcp.json`으로 이미 설치·주력 Reader로 사용 중.
+
 이 문서는 [kordoc](https://github.com/chrisryugj/kordoc)의 장점 중
 `hwpx-skill`에 이미 반영된 것, 앞으로 반영할 만한 것, 지금은 보류해야 할
 것을 정리한다.

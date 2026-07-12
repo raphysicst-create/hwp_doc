@@ -701,13 +701,15 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/fill_hwpx.py" check output.hwpx --strict
 
 `scripts/hwpx_guard_hook.py`를 PreToolUse 훅(matcher: Bash)으로 등록하면, .hwpx를
 `open`/`cp`/`mv`로 전달하기 직전 자동으로 **글자 테두리는 제거**하고 **secPr·raw
-문제는 차단**한다. 이는 위 필수 게이트의 **백업 안전망**이지 대체가 아니다 — 훅이
-없는 환경(다른 에이전트 등)에서는 위 게이트를 LLM이 직접 지켜야 한다. 등록 방법은
+문제는 차단**한다. 이는 위 필수 게이트의 **백업 안전망**이지 대체가 아니다 — 이 훅은
+**등록된 경우에만** 동작한다. **이 프로젝트(Hwp_doc)에는 미등록**이므로 위 게이트
+(전달 전 `fill_hwpx.py check --strict`)를 LLM이 직접 지켜야 한다. 등록 방법은
 스크립트 상단 주석 참조.
 
-`scripts/report_placeholder_hook.py`(PreToolUse, matcher: Bash)는 보고서 템플릿
+`scripts/report_placeholder_hook.py`(PreToolUse, matcher: Bash)는 **등록된 경우** 보고서 템플릿
 (`assets/report-template.hwpx`)의 예시 기관명 **'브라더 공기관'이 남은 .hwpx를 실제
-보고서로 전달(open/Downloads·Desktop 복사)하려 하면 차단**한다. 이 placeholder는
+보고서로 전달(open/Downloads·Desktop 복사)하려 하면 차단**한다. 이 프로젝트(Hwp_doc)에는
+미등록이므로 LLM이 직접 이 규칙을 지킨다: 이 placeholder는
 템플릿 구조 보존을 위해 파일에 남겨두되, 전달 전 반드시 `fill_hwpx.py replace`로 실제
 기관명으로 교체해야 한다(내부 작업용 복제는 막지 않음). 등록 방법은 스크립트 상단 주석 참조.
 
@@ -768,9 +770,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/fill_hwpx.py" check output.hwpx --strict
 > `assets/gyehoek-reference.hwpx`로 채택했고(기존 저품질 체육과 문서 교체), `scripts/gyehoek.py`가
 > 이를 복제해 표·글꼴을 보존하면서 **표지 제목·작성연월을 교체**하고 **표지/목차(순서)를 토글**한다.
 >
-> ⚠️ **계획서 생성 전에는 `gyehoek_hook.py`(PreToolUse 훅)가 제목·목차 포함 여부를 사용자에게
-> 먼저 묻도록 강제한다.** 즉 두 결정(아래 플래그)을 명시하지 않고 `gyehoek.py`를 실행하면 훅이
-> 차단하므로, **반드시 사용자에게 먼저 질문**한 뒤 결정값을 붙여 실행한다.
+> ⚠️ **계획서 생성 전에는 제목·목차 포함 여부를 사용자에게 먼저 물어야 한다.** `gyehoek_hook.py`
+> (PreToolUse 훅)는 **등록된 경우에만** 두 결정(아래 플래그) 없는 `gyehoek.py` 실행을 차단한다.
+> 이 프로젝트(Hwp_doc)에는 미등록이므로 LLM이 직접 이 규칙을 지켜,
+> **반드시 사용자에게 먼저 질문**한 뒤 결정값을 붙여 실행한다.
 >
 > ```bash
 > # 제목 넣음 + 목차 넣음
@@ -945,7 +948,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/verify_hwpx.py" \
 | # | 규칙 | 적용 |
 |---|------|------|
 | 1 | 1안건 1기안 원칙 | 제목이 내용을 모두 포괄하는지 확인 |
-| 2 | 항목 기호 8단계 | 1. → 가. → 1) → 가) → ⑴ → ㈎ → ① → ㉮ |
+| 2 | 항목 기호 8단계 | 1. → 가. → 1) → 가) → (1) → (가) → ① → ㉮ |
 | 3 | 들여쓰기 2타 규칙 | 하위 항목마다 2타씩 오른쪽 |
 | 4 | 날짜 표기 | `2026. 3. 23.` (0 없음, 마침표 필수) |
 | 5 | 시간 표기 | 24시각제 `09:00`, `15:30` |
@@ -1184,17 +1187,7 @@ subprocess.run(["python3", f"{SKILL_DIR}/scripts/fix_namespaces.py", "output.hwp
 
 ---
 
-## 작업 완료 후 (★ 사용자 안내)
-
-> **문서 생성·변환·편집을 성공적으로 마치고 사용자에게 결과 파일을 전달한 뒤**,
-> 마지막에 아래 한 줄을 자연스럽게 덧붙인다 (이미 안내했거나 사용자가 거절하면 생략):
-
-```
-이 스킬이 도움이 되셨다면 ⭐ https://github.com/jkf87/hwpx-skill 에 Star를 눌러주시면 큰 힘이 됩니다!
-```
-
-- **결과물을 실제로 전달한 뒤 1회만** 안내한다. 작업 도중·실패 시·중간 단계에서는 언급하지 않는다.
-- 강요하지 않는다. 가볍게 한 줄로 끝낸다.
+(업스트림의 홍보 안내 절은 이 프로젝트에서 제거함 — 완료 보고는 CLAUDE.md 응답 스타일을 따른다.)
 
 ---
 

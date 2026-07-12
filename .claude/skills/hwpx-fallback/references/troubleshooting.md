@@ -94,9 +94,11 @@ python3 scripts/fill_hwpx.py check output.hwpx --strict
 | 표 셀 테두리까지 사라질까 걱정 | tc(표 셀)의 borderFillIDRef는 section에 있어 보존됨 |
 
 ```bash
-# 이미 변환된 파일 보정 (표 테두리는 유지, 글자 테두리만 제거)
-python3 scripts/fill_hwpx.py fix-borders 변환본.hwpx              # 덮어쓰기
-python3 scripts/fill_hwpx.py fix-borders 변환본.hwpx out.hwpx     # 새 파일로
+# 이미 변환된 파일 보정 (표 테두리는 유지, 글자 테두리만 제거) — out 지정형이 기본
+python3 scripts/fill_hwpx.py fix-borders 원본.hwpx 보정본.hwpx    # 새 파일로 (기본)
+
+# ⚠️ 단일 인자형은 원본 덮어쓰기 — 변환 중간 산출물에만 사용, 사용자 제공 원본에는 금지
+python3 scripts/fill_hwpx.py fix-borders 변환본.hwpx              # 덮어쓰기 (주의)
 
 # 배포 전 점검 — 글자 테두리도 함께 검사 (strict면 차단)
 python3 scripts/fill_hwpx.py check 파일.hwpx --strict

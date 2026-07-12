@@ -15,14 +15,15 @@
 |------|------|------|
 | Reader | kordoc (MCP) | HWP3~5·HWPX·PDF·XLS·DOCX → Markdown, 구조 분석, diff |
 | Editor 주력 | Canine89/hwpxskill | 신규 생성, 양식 보존 교체, 템플릿, page_guard |
-| Editor 보조 | kordoc patchHwpx / fillForm | 특정 셀·문단만 패치 |
+| Editor 보조 | kordoc patch_document / fill_form | 특정 셀·문단만 패치 |
 | 폴백 | jkf87/hwpx-skill | validate 실패 시 재생성 용도로만 (F4) |
 | 보류 | hwp-mcp | 사용하지 않음. 표 구조 변경이 월 수 회 이상 실제 발생하면 사용자와 도입 논의 |
 
 ## 라우팅 규칙
 - 새 문서 / 양식 유지 + 내용 교체 → Canine89
-- 특정 셀·문단만 수정 → kordoc patchHwpx / fillForm
+- 특정 셀·문단만 수정 → kordoc patch_document / fill_form
 - 표 구조 변경(행·열·병합) → MD 추출 → 수정 → Canine89 재생성 (우회가 기본)
+- `.hwp` 입력: 읽기는 kordoc 우선, kordoc 실패 시에만 hwpx-fallback의 `convert_hwp.py`로 변환(이 경우만 폴백 스킬 사용 허용). 변환본을 편집 베이스로 쓸 때는 사용자에게 고지. `.hwp`로 결과물을 만드는 것은 항상 거부.
 - **확신이 없으면 임의 진행하지 말고 사용자에게 질문한다.**
 
 ## 절대 금지 규칙
@@ -56,19 +57,24 @@
 사람이 검토에서 고친 최종본은 `knowledge/examples/`에 저장한다 (MD 변환본 병행).
 같은 유형의 지적이 2회 나오면 → 해당 검증 규칙을 Validator에 추가하자고 사용자에게 제안한다.
 
-## Validator 파이프라인 (생성 후 필수, 순서 고정)
-1. fix_namespaces 실행
-2. validate (스키마 검증) — 실패 시 F4: 재실행 → jkf87로 재생성
-3. page_guard — 페이지 초과 시 "문맥 유지, 약 10% 압축 재작성" 자기 교정 **최대 2회**, 실패 시 사용자 보고
+## Validator 파이프라인 (생성 후 필수, 순서는 hwpx SKILL.md 기준)
+1. validate (스키마 검증) — 실패 시 F4: validate 재실행 1회 → 여전히 실패 시 hwpx-fallback의 **워크플로우 F(양식 있음) 또는 A(양식 없음)**로 재생성 → 재생성물에 `fill_hwpx.py check --strict` 통과 후, **주력 hwpx 스킬의 page_guard·content_guard·gonmun_lint를 다시 적용**(스크립트는 `.claude/skills/hwpx/scripts/` 경로로 직접 실행)해야 완료
+2. fix_namespaces 실행
+3. finalize_hwpx --strip-linesegarray (줄 배치 캐시 제거 + 레이아웃 위험 경고)
+4. validate --layout
+5. page_guard — 페이지 초과 시 "문맥 유지, 약 10% 압축 재작성" 자기 교정 **최대 2회**, 실패 시 사용자 보고
    - **의도된 구조 변경 경로**: 사용자가 표 행·열 추가 등 구조 변경을 명시 승인한 작업은 기본 fingerprint 검사가 FAIL하는 것이 정상. 이때는 ① FAIL 사유가 승인된 변경 그 자체뿐인지 확인해 보고에 명시하고, ② 결과물 크기를 원본 자리(폭·높이)에 맞춰 쪽수를 보존하며, ③ 승인된 결과물로 `--write-budget/--write-structure` 프로파일을 재생성해 이후 수정의 새 기준으로 삼는다 (2026. 7. 7. 취약시기 문화체험 v2 사례)
-4. 규칙 검증 최소셋: 날짜 형식·항목부호 순서(자동 수정) / **날짜-요일 정합은 gonmun_lint(DATE_WEEKDAY)가 기계 검증** — LLM의 요일 계산은 신뢰하지 않는다 / 붙임 언급 수 = 실제 첨부 수(불일치 보고) / **기존 문서를 재활용한 작업이면 content_guard forbid에 직전 문서의 고유 명칭(행사명·강사명·기관명)을 반드시 넣어 복사 잔재 검사** (사례: 사람책 도서관 잔재가 예산·기대효과에 남음, 2026. 7. 7.)
+6. (가능 시) `finalize_hwpx.py 결과.hwpx --hancom`으로 한컴 실열림 검사 — pywin32 부재 등으로 불가하면 그 사실을 보고에 명시
+7. 규칙 검증(gonmun_lint·content_guard) 최소셋: 날짜 형식·항목부호 순서(자동 수정) / **날짜-요일 정합은 gonmun_lint(DATE_WEEKDAY)가 기계 검증** — LLM의 요일 계산은 신뢰하지 않는다 / 붙임 언급 수 = 실제 첨부 수(불일치 보고) / **기존 문서를 재활용한 작업이면 content_guard forbid에 직전 문서의 고유 명칭(행사명·강사명·기관명)을 반드시 넣어 복사 잔재 검사** (사례: 사람책 도서관 잔재가 예산·기대효과에 남음, 2026. 7. 7.)
+   - gonmun_lint는 항상 `.claude/skills/hwpx/scripts/gonmun_lint.py` 사본을 실행한다 (폴백 사본에는 DATE_WEEKDAY 검증이 없음)
    - **관련번호 인용 대조**: `1. 관련:`의 `기관-번호(YYYY. M. D.)`는 실존 문서에서 확인된 값만 쓴다 — W2는 받은 공문 원문에서, 가통 배부·후속 공문은 선행 자교 공문에서(`examples/index.md` 체인 표 → `md/` frontmatter 검색 → received/·sent/), 규정 근거는 상급기관 번호 병기 가능. 인용 날짜는 그 문서의 **시행일**(결재일과 다를 수 있음, 6487 사례). 어디에도 없으면 임의 기입하지 말고 사용자에게 질문
-5. 원본이 있는 작업이면 kordoc diff로 신구대조 생성
-6. 검토 요청 시 반드시 안내: **"발송 전 한글로 열어 확인해주세요"** (스키마 통과 ≠ 한글에서 열림 보장, 이것이 최종 방어선)
+8. 원본이 있는 작업이면 kordoc compare_documents로 신구대조 생성
+9. 검토 요청 시 반드시 안내: **"발송 전 한글로 열어 확인해주세요"** (스키마 통과 ≠ 한글에서 열림 보장, 이것이 최종 방어선)
 
 ## 실패 처리
 - 동일 단계 **2회 실패 시 자동 시도 중단**, 시도 이력과 함께 사용자에게 보고.
 - kordoc 파싱 실패 → 포맷 변환 후 재시도 → jkf87 변환기 경유
+- kordoc MCP 도구가 목록에 없거나 호출이 연결 오류로 실패하면: ① HWPX 읽기는 `.claude/skills/hwpx/scripts/text_extract.py --format markdown`으로 대체, ② PDF는 Read 도구로 직접 판독, ③ 셀 패치는 hwpx 스킬 `edit_hwpx.py --cell/--slot-json`으로 대체, ④ diff는 두 파일의 text_extract 결과 비교로 대체하고 보고에 'kordoc 미사용' 명시
 - 스캔 PDF → OCR → 실패 시 이미지로 직접 판독
 - kordoc skipped[] 발생 → 해당 항목만 Canine89 재시도 → 전체 재생성
 
@@ -89,7 +95,7 @@ docs/             # 설계도 v4
 
 ## 훅 (규칙의 강제 계층)
 프로즈 규칙은 조언이고, 어기면 대가가 큰 규칙은 훅으로 강제한다. 설정: `.claude/settings.json`
-- **PreToolUse** `protect_files.py`: knowledge/·docs/ 쓰기 차단(금지 규칙 4), 위험 셸 명령 차단
+- **PreToolUse** `protect_files.py`: knowledge/·docs/ **기존 파일 덮어쓰기** 차단(신규 파일 생성은 허용 — 환류 저장용, 금지 규칙 4), 위험 셸 명령 차단
 - **PostToolUse** `audit_log.py`: 파일 생성·수정을 audit.jsonl에 자동 기록
 - **Stop** `stop_validator.py`: `scripts/validate_pipeline.py`가 존재하면 턴 종료 전 실행. 실패 시 차단 → Self-Correction 루프, **2회 초과 시 차단 해제 + 사용자 보고**. 스크립트가 없으면 투명하게 통과 (현재 상태)
 - 활성화 순서: 세션 1(관통 테스트)은 훅 없이도 가능 → MVP 달성 후 validate_pipeline.py 작성으로 Stop 루프 활성화 → W1·W2를 `.claude/skills/` 커맨드로 승격
