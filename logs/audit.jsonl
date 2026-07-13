@@ -61,3 +61,6 @@
 {"ts": "2026-07-12T22:59:11", "agent": "global-hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\skills\\hwpx-fallback\\references\\troubleshooting.md", "result": "ok"}
 {"ts": "2026-07-12T23:06:00", "agent": "global-hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\skills\\hwpx-fallback\\references\\gonmunseo-2025-writing-rules.md", "result": "ok"}
 {"ts": "2026-07-12T23:06:03", "agent": "global-hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\skills\\hwpx-fallback\\references\\kordoc-integration.md", "result": "ok"}
+{"ts": "2026-07-13T11:33:25", "agent": "claude", "action": "ingest_examples", "target": "knowledge/examples/(화동중학교-5409 본문·첨부), (화동중학교-5458 본문·첨부)", "result": "ok", "detail": "업로드 4파일 반입(cp -n), md 변환본 2건 생성, index.md 갱신(50→52세트)"}
+{"ts": "2026-07-13T11:33:25", "agent": "claude", "action": "compare_documents", "target": "output/2026_취약시기문화체험_행사계획_v2.hwpx vs 5409 첨부", "result": "ok", "detail": "변경 2블록(운영표 비고열 재구성, 예산 간식비 삭제·지출항목 기입) — 예산 지출항목 공란 지적 1회째 기록"}
+{"ts": "2026-07-13T11:33:25", "agent": "claude", "action": "annotate", "target": "md/5458_농어촌유학교내캠핑운영계획.md", "result": "ok", "detail": "본문 7. 14.(월) 요일 오기(실제 화) — DATE_WEEKDAY 실사례 주석"}
