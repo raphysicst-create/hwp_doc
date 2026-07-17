@@ -101,3 +101,8 @@
 {"ts": "2026-07-15T15:36:55", "agent": "claude", "action": "revise", "target": "output/2026_농어촌유학_수리과학체험_운영계획_v3.hwpx", "result": "ok", "detail": "사용자 검토(v2, 동의+4.5점) 반영 수정: 교과 융합계획 12개 셀 문구를 12~21자→36~47자(약 2배, 예산 상한 64자 이내)로 확장, 2줄 표시 목적. validate/layout/content_guard(require 항해술 등)/gonmun_lint 0건 통과, page_guard(v2 프로파일 기준) 완전 PASS(문단/셀 예산 초과 없음, 구조 변경 없음). kordoc 신구대조: 변경 1블록(융합표)뿐, 예산표 100% 동일 확인. v3 프로파일 신규 저장, OneDrive 복사 완료"}
 {"ts": "2026-07-15T16:15:33", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\settings.json", "result": "ok"}
 {"ts": "2026-07-15T16:16:03", "agent": "hook", "action": "Write", "target": "C:\\Users\\22\\.claude\\projects\\c--Users-22-Desktop-Y-claude-Hwp-doc\\memory\\no-empty-cell-validator.md", "result": "ok"}
+{"ts": "2026-07-15T23:43:00", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-15T23:43:13", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-17T17:53:21", "agent": "claude", "action": "parse_analyze", "target": "신규 반입 8파일(5650 세트, 5458 갱신, 5409 첨부, 정선 교육경비보조금 붙임2·3·4)", "result": "ok", "detail": "kordoc 파싱+신구대조: 5650 v3대비 3곳 수정, 5458 첨부 근무상황 명단 삭제, 5409 내용동일, 본문PDF 요일오기 잔존"}
+{"ts": "2026-07-17T18:01:19", "agent": "hook", "action": "Write", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\knowledge\\examples\\md\\5650_농어촌유학수리과학체험운영계획.md", "result": "ok"}
+{"ts": "2026-07-17T18:01:43", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
