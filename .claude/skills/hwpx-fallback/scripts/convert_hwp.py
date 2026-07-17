@@ -9,7 +9,7 @@ HWPX(개방형 XML) 파일로 변환한다.
     python3 convert_hwp.py input.hwp --info   # 문서 정보만 출력
 
 의존성:
-    pip install pyhwp5 olefile lxml --break-system-packages
+    pip install pyhwp six olefile lxml --break-system-packages
 """
 
 import argparse
@@ -29,7 +29,11 @@ def _ensure_dependencies():
     try:
         import hwp5  # noqa: F401
     except ImportError:
-        missing.append("pyhwp5")
+        missing.append("pyhwp")  # PyPI 배포명은 pyhwp (모듈명 hwp5)
+    try:
+        import six  # noqa: F401  # hwp5 하위 모듈이 지연 임포트하므로 사전 확인 필요
+    except ImportError:
+        missing.append("six")
     try:
         import lxml  # noqa: F401
     except ImportError:
