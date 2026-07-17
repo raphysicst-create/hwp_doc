@@ -106,3 +106,13 @@
 {"ts": "2026-07-17T17:53:21", "agent": "claude", "action": "parse_analyze", "target": "신규 반입 8파일(5650 세트, 5458 갱신, 5409 첨부, 정선 교육경비보조금 붙임2·3·4)", "result": "ok", "detail": "kordoc 파싱+신구대조: 5650 v3대비 3곳 수정, 5458 첨부 근무상황 명단 삭제, 5409 내용동일, 본문PDF 요일오기 잔존"}
 {"ts": "2026-07-17T18:01:19", "agent": "hook", "action": "Write", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\knowledge\\examples\\md\\5650_농어촌유학수리과학체험운영계획.md", "result": "ok"}
 {"ts": "2026-07-17T18:01:43", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-17T18:18:31", "agent": "hook", "action": "Write", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\output\\2026_교육경비_과학그리기대회_실적정산보고서_초안.md", "result": "ok"}
+{"ts": "2026-07-17T18:31:09", "agent": "hook", "action": "Write", "target": "C:\\Users\\22\\AppData\\Local\\Temp\\claude\\c--Users-22-Desktop-Y-claude-Hwp-doc\\08f50806-4b32-4de3-acbe-bc7fe5096ff7\\scratchpad\\값_pass1.json", "result": "ok"}
+{"ts": "2026-07-17T18:31:13", "agent": "hook", "action": "Write", "target": "C:\\Users\\22\\AppData\\Local\\Temp\\claude\\c--Users-22-Desktop-Y-claude-Hwp-doc\\08f50806-4b32-4de3-acbe-bc7fe5096ff7\\scratchpad\\값_pass2.json", "result": "ok"}
+{"ts": "2026-07-17T20:14:18", "agent": "claude", "action": "generate_hwpx", "target": "output/2026_교육경비_과학그리기대회_실적정산보고서.hwpx", "result": "ok", "detail": "붙임2 변경서식(.hwp) 변환본 기반 슬롯 채움 144건. validate·layout·gonmun_lint 0건·content_guard PASS. page_guard 잔여 4건=승인된 값 채움(열 물리폭 검증). OneDrive 복사 완료"}
+{"ts": "2026-07-17T20:32:59", "agent": "claude", "action": "self_correction", "target": "output/2026_교육경비_과학그리기대회_실적정산보고서_v2.hwpx", "result": "ok", "detail": "검토 환류: convert_hwp.py 변환본의 캡션 역순·표 순서 붕괴(한글 렌더링) → 한글 COM 네이티브 HWPX 변환으로 베이스 교체, compose(원문자) 잔재 제거, COM PDF 내보내기 렌더링 검증 추가. 결함 v1 산출물 삭제"}
+{"ts": "2026-07-17T20:43:43", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-17T20:43:47", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-17T20:44:06", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\skills\\hwpx-fallback\\scripts\\convert_hwp.py", "result": "ok"}
+{"ts": "2026-07-17T20:44:22", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\skills\\hwpx-fallback\\scripts\\convert_hwp.py", "result": "ok"}
+{"ts": "2026-07-17T20:45:33", "agent": "hook", "action": "Write", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\scripts\\render_check.py", "result": "ok"}
