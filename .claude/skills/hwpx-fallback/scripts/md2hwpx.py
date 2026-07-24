@@ -574,7 +574,8 @@ def main():
         cmd.extend(["--header", str(args.header)])
 
     print(f"빌드: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
     print(result.stdout)
     if result.returncode != 0:
         print(f"ERROR: build_hwpx.py 실패:\n{result.stderr}", file=sys.stderr)
@@ -587,7 +588,8 @@ def main():
         if fix_script.is_file():
             ns_result = subprocess.run(
                 [sys.executable, str(fix_script), str(args.output)],
-                capture_output=True, text=True
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace"
             )
             if ns_result.returncode == 0:
                 print("네임스페이스 후처리 완료")
@@ -612,7 +614,8 @@ def main():
     if validate_script.is_file():
         v_result = subprocess.run(
             [sys.executable, str(validate_script), str(args.output)],
-            capture_output=True, text=True
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         )
         print(v_result.stdout)
 
@@ -621,7 +624,8 @@ def main():
     if extract_script.is_file():
         e_result = subprocess.run(
             [sys.executable, str(extract_script), str(args.output)],
-            capture_output=True, text=True
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace"
         )
         extracted = e_result.stdout.strip()
         lines = extracted.split('\n')

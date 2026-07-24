@@ -102,7 +102,8 @@ def main():
     try:
         proc = subprocess.run(
             [sys.executable, checker, "check", target, "--strict"],
-            capture_output=True, text=True, timeout=30)
+            capture_output=True, text=True, timeout=30,
+            encoding="utf-8", errors="replace")
     except Exception:  # noqa: BLE001
         return 0  # 검사기 실행 실패 시 통과 (작업 차단보다 진행 우선)
 

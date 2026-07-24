@@ -85,6 +85,10 @@ def pick_anchors(lines: list[str]) -> list[str]:
 def hancom_pages_and_pdf(src: Path, pdf_out: Path) -> int:
     """한글 COM으로 파일을 열어 쪽수를 얻고 PDF로 내보낸다."""
     import win32com.client as win32
+    # COM의 한글 프로세스는 작업 디렉토리가 다르므로 반드시 절대 경로로 전달
+    src = src.resolve()
+    if pdf_out is not None:
+        pdf_out = pdf_out.resolve()
     fmt = "HWP" if src.suffix.lower() == ".hwp" else "HWPX"
     hwp = win32.Dispatch("HWPFrame.HwpObject")
     try:
