@@ -195,3 +195,13 @@
 {"ts": "2026-07-24T14:49:51", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
 {"ts": "2026-07-24T14:59:54", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
 {"ts": "2026-07-24T15:00:23", "agent": "hook", "action": "Edit", "target": "c:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.gitignore", "result": "ok"}
+{"ts": "2026-07-24T15:20:20", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-24T15:21:00", "agent": "claude", "action": "sync_script", "target": ".claude/skills/hwpx-fallback/scripts/gonmun_lint.py", "result": "ok", "detail": "주력 hwpx 사본으로 1회 동기화(DATE_WEEKDAY 포함 14규칙, 바이트 동일 확인) — 폴백 테스트 lint 구간 10/10 통과, DATE_WEEKDAY 스모크 통과"}
+{"ts": "2026-07-24T15:32:31", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\hooks\\protect_files.py", "result": "ok"}
+{"ts": "2026-07-24T15:33:03", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\.claude\\hooks\\protect_files.py", "result": "ok"}
+{"ts": "2026-07-24T15:33:35", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\.claude\\hooks\\hwp_doc_guard.py", "result": "ok"}
+{"ts": "2026-07-24T15:33:44", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\.claude\\hooks\\hwp_doc_guard.py", "result": "ok"}
+{"ts": "2026-07-24T15:34:18", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\.claude\\hooks\\hwp_doc_guard.py", "result": "ok"}
+{"ts": "2026-07-24T15:35:22", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\knowledge\\examples\\index.md", "result": "ok"}
+{"ts": "2026-07-24T15:35:48", "agent": "hook", "action": "Edit", "target": "C:\\Users\\22\\Desktop\\Y-claude\\Hwp_doc\\CLAUDE.md", "result": "ok"}
+{"ts": "2026-07-24T15:35:00", "agent": "claude", "action": "hook_whitelist", "target": ".claude/hooks/protect_files.py + ~/.claude/hooks/hwp_doc_guard.py", "result": "ok", "detail": "파생물 화이트리스트(.md 한정: examples/index.md·examples/md/) 추가, 8케이스 검증 통과 — index.md 매핑 표를 CLAUDE.md 기준으로 동기화, CLAUDE.md 예외 문구 삭제 (진실의 원천 단일화)"}

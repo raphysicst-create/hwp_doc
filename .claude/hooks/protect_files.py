@@ -2,6 +2,7 @@
 """PreToolUse 훅: CLAUDE.md 금지 규칙을 강제한다.
 - knowledge/, docs/ 폴더의 기존 파일 덮어쓰기 차단 (원본 보존)
 - 신규 파일 생성은 허용 (파생물: md 변환본·index·템플릿 — 2026. 7. 8. 사용자 승인)
+- 파생물 화이트리스트(.md 한정)는 기존 파일이라도 갱신 허용 (2026. 7. 24. 사용자 승인)
 - 위험한 셸 명령 차단
 exit 0 = 허용, exit 2 = 차단 (stderr 메시지가 Claude에게 전달됨)
 """
@@ -11,6 +12,9 @@ import re
 import sys
 
 PROTECTED_DIRS = ("knowledge/", "knowledge\\", "docs/", "docs\\")
+# 에이전트가 만들고 유지보수하는 파생물 — 원본(발송본 hwpx·pdf) 보호는 그대로 두고
+# 갱신을 허용한다. .md 확장자에 한정해 원본이 이 경로에 놓여도 보호가 유지된다.
+DERIVED_WHITELIST = ("knowledge/examples/index.md", "knowledge/examples/md/")
 DANGEROUS_PATTERNS = [
     r"\brm\s+-rf\b",
     r"\bdel\s+/[sq]\b",
@@ -29,9 +33,10 @@ def main():
     if tool in ("Write", "Edit"):
         raw_path = tool_input.get("file_path") or ""
         path = raw_path.replace("\\", "/")
+        derived = path.endswith(".md") and any(w in path for w in DERIVED_WHITELIST)
         for d in PROTECTED_DIRS:
             d_norm = d.replace("\\", "/")
-            if f"/{d_norm}" in f"/{path}" and "/output" not in path:
+            if f"/{d_norm}" in f"/{path}" and "/output" not in path and not derived:
                 # 신규 파일 생성은 허용, 기존 파일(원본 포함) 수정·덮어쓰기만 차단
                 if not os.path.exists(raw_path):
                     break
