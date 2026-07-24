@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """검토 결과 기록기 — 발송 여부가 아니라 사용자 동의(approved) + 5점 평가로 성공을 판단한다.
 
-MVP 성공 기준(CLAUDE.md, 2026. 7. 15. 개정): W1·W2 각 5건에 대해 사용자가 검토 후
-동의(approved) + 5점 만점 평가를 남기면 해당 건은 "성공"으로 집계된다. 실제 온나라 발송
+MVP 성공 기준(CLAUDE.md, 2026. 7. 24. 재개정): W1 5건에 대해 사용자가 검토 후
+동의(approved) + 5점 만점 평가를 남기면 MVP 달성. W2는 실수신 공문 빈도가 낮아 기준에서
+제외 — 기록·집계는 계속하되 MVP 판단에는 반영하지 않는다. 실제 온나라 발송
 여부와는 무관 — 발송은 항상 사람이 하고 에이전트는 관여하지 않는다(CLAUDE.md 금지 규칙 2).
 
 사용 예:
@@ -59,12 +60,15 @@ def summarize():
         entries = by_type[t]
         approved = [e for e in entries if e["approved"]]
         avg = sum(e["score"] for e in approved) / len(approved) if approved else 0
-        print(f"■ {t}: 동의 {len(approved)}/5건 목표 (총 평가 {len(entries)}건), 평균 {avg:.1f}/5점")
+        if t == "W1":
+            print(f"■ {t}: 동의 {len(approved)}/5건 목표 (총 평가 {len(entries)}건), 평균 {avg:.1f}/5점")
+        else:
+            print(f"■ {t}: 동의 {len(approved)}건 — MVP 기준 제외·참고용 (총 평가 {len(entries)}건), 평균 {avg:.1f}/5점")
         for e in sorted(entries, key=lambda x: x["ts"]):
             mark = "OK" if e["approved"] else "반려"
             print(f"   [{mark}] {e['score']}/5  {e['file']}  {e['note']}")
-        if len(approved) >= 5:
-            print(f"   → MVP 기준 충족 ({t} 5건 동의)")
+        if t == "W1" and len(approved) >= 5:
+            print("   → MVP 기준 충족 (W1 5건 동의, 2026. 7. 24. 완화 기준)")
         print()
 
 

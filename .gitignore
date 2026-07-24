@@ -5,3 +5,7 @@
 __pycache__/
 *.pyc
 .venv/
+
+# 훅 기계 상태 (캐시 — 기록물 아님)
+logs/.validate_state.json
+logs/.stop_attempts

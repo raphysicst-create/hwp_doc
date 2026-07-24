@@ -8,7 +8,7 @@
 ## 확정된 환경
 - Windows + 한글 설치됨 (검토 시 한글 열람 가능)
 - **최종 제출 포맷: HWPX**
-- **MVP 성공 기준 (2026. 7. 15. 개정)**: W1(신규)·W2(회신) 각 5건에 대해 사용자가 검토 후 **동의(approved) + 5점 만점 평가**를 남길 것. 발송 여부는 무관 — 발송은 항상 사람이 하며 에이전트가 확인할 방법도 없다. `scripts/log_review.py --file <경로> --type W1|W2 --approved yes/no --score 1-5`로 기록, `--summary`로 누적 현황 확인
+- **MVP 성공 기준 (2026. 7. 24. 재개정)**: W1(신규) 5건에 대해 사용자가 검토 후 **동의(approved) + 5점 만점 평가**를 남기면 MVP 달성. W2(회신)는 실제 수신 공문 빈도가 낮아 5건 충족이 비현실적이므로 기준에서 제외한다 — 검토·기록(`--type W2`)은 계속하되 MVP 판단에는 반영하지 않는다. 발송 여부는 무관 — 발송은 항상 사람이 하며 에이전트가 확인할 방법도 없다. `scripts/log_review.py --file <경로> --type W1|W2 --approved yes/no --score 1-5`로 기록, `--summary`로 누적 현황 확인 (설계도-v4의 옛 기준 문구는 훅 보호로 미갱신 — 여기가 최신)
 
 ## 도구 (역할 → 어댑터)
 | 역할 | 도구 | 용도 |
@@ -51,6 +51,7 @@
 - 초안 작성 전 `knowledge/examples/`에서 유사 공문을 검색해 형식을 따른다 (있는 경우)
 
 ## 표준 워크플로
+(2026. 7. 24. `/w1`·`/w2` 스킬로 승격 — 커맨드 호출 시 고정 순서 체크리스트가 로드된다. 규칙의 권위는 이 문서이며 스킬은 진입점·요약이다)
 ### W1 신규 공문
 1. `knowledge/examples/index.md`에서 유형·문서번호로 검색 → `knowledge/templates/`에 해당 유형 본문 스켈레톤이 있으면 그것을 골격으로 사용 (매핑 표는 index.md 상단, 없으면 규정만으로 진행)
    - **슬롯 템플릿 4종 (2026. 7. 15. 승격, index.md 매핑 표는 훅 보호로 미갱신 — 여기가 최신)**: `templates/가정통신문/`(일반 가통) · `templates/가정통신문-고사안내/`(고사 안내 가통, 표 구조 다르면 재생성 경로) · `templates/성립전예산요구/`(기안문 본문) · `templates/회의록-교과협의회/`(고사 출제 협의). 각 폴더 README의 슬롯 매핑·주의사항을 따라 `edit_hwpx.py --slot-json`으로 채운다 — 마크다운 스켈레톤보다 우선
@@ -115,8 +116,8 @@ scripts/          # 기계화 도구 (LLM 미개입 조회·검증)
 프로즈 규칙은 조언이고, 어기면 대가가 큰 규칙은 훅으로 강제한다. 설정: `.claude/settings.json`
 - **PreToolUse** `protect_files.py`: knowledge/·docs/ **기존 파일 덮어쓰기** 차단(신규 파일 생성은 허용 — 환류 저장용, 금지 규칙 4), 위험 셸 명령 차단
 - **PostToolUse** `audit_log.py`: 파일 생성·수정을 audit.jsonl에 자동 기록
-- **Stop** `stop_validator.py`: `scripts/validate_pipeline.py`가 존재하면 턴 종료 전 실행. 실패 시 차단 → Self-Correction 루프, **2회 초과 시 차단 해제 + 사용자 보고**. 스크립트가 없으면 투명하게 통과 (현재 상태)
-- 활성화 순서: 세션 1(관통 테스트)은 훅 없이도 가능 → `python scripts/log_review.py --summary`로 W1·W2 각 5건 동의 확인되면(MVP 달성) validate_pipeline.py 작성으로 Stop 루프 활성화 → W1·W2를 `.claude/skills/` 커맨드로 승격
+- **Stop** `stop_validator.py`: `scripts/validate_pipeline.py`가 존재하면 턴 종료 전 실행. 실패 시 차단 → Self-Correction 루프, **2회 초과 시 차단 해제 + 사용자 보고**. **2026. 7. 24. 활성화됨** — validate_pipeline.py는 `output/` 변경분만 구조 validate + gonmun_lint로 빠르게 검사한다 (기존 산출물은 기준선만 기록, 이미 보고된 실패 파일은 변경 전까지 재차단하지 않음, 상태: `logs/.validate_state.json`). COM 실열림·render_check 등 느린 검사는 대화 중 파이프라인 담당
+- 활성화 순서: 세션 1(관통 테스트)은 훅 없이도 가능 → `python scripts/log_review.py --summary`로 W1 5건 동의 확인되면(MVP 달성, 2026. 7. 24. 완화 기준) validate_pipeline.py 작성으로 Stop 루프 활성화 → W1·W2를 `.claude/skills/` 커맨드로 승격 — **전 단계 완료 (2026. 7. 24.)**: Stop 루프 활성 + `/w1`·`/w2` 스킬 승격
 - **전역 훅(2026. 7. 11.)**: `C:\Users\22\.claude\hooks\hwp_doc_guard.py`가 user settings.json에 등록됨 — 프로젝트 밖 세션(텔레그램 경유 홈 세션 등)에서도 보호 폴더 차단(pre)과 audit.jsonl 자동 기록(post)을 경로 감지로 강제. 프로젝트 안 세션에서는 이중 기록을 피하려고 post가 스스로 건너뜀
 - Stop 훅 수정 시 무한 루프 방지 로직(stop_hook_active, 시도 카운터)을 제거하지 않는다
 
