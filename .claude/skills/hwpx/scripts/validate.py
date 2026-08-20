@@ -3,7 +3,7 @@
 
 Checks:
   - Valid ZIP archive
-  - Required files present (mimetype, content.hpf, header.xml, section0.xml)
+  - Required files present (HWPX 최소 패키지 11개 — REQUIRED_FILES 참고)
   - mimetype content is correct
   - mimetype is the first ZIP entry and stored without compression
   - All XML files are well-formed
@@ -21,11 +21,23 @@ from zipfile import ZIP_STORED, BadZipFile, ZipFile
 
 from lxml import etree
 
+# HWPX 최소 패키지 11개 파일.
+# 2026. 8. 20.: 이전에는 아래 4개(mimetype·content.hpf·header.xml·section0.xml)만
+# 검사해서, Preview/ 2개와 META-INF/container.rdf가 빠진 9파일 패키지가 전 검사를
+# 통과했다. 한글은 그래도 열리기 때문에 COM 실열림 검사로도 잡히지 않는다.
+# output/ 26건 중 5건이 같은 3개 파일 누락 — 전부 가정통신문 재패키징 경로.
 REQUIRED_FILES = [
     "mimetype",
+    "version.xml",
+    "settings.xml",
     "Contents/content.hpf",
     "Contents/header.xml",
     "Contents/section0.xml",
+    "META-INF/container.xml",
+    "META-INF/container.rdf",
+    "META-INF/manifest.xml",
+    "Preview/PrvImage.png",
+    "Preview/PrvText.txt",
 ]
 
 EXPECTED_MIMETYPE = "application/hwp+zip"

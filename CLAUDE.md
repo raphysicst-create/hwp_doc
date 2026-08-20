@@ -75,7 +75,7 @@
 같은 유형의 지적이 2회 나오면 → 해당 검증 규칙을 Validator에 추가하자고 사용자에게 제안한다.
 
 ## Validator 파이프라인 (생성 후 필수, 순서는 hwpx SKILL.md 기준)
-1. validate (스키마 검증) — 실패 시 F4: validate 재실행 1회 → 여전히 실패 시 hwpx-fallback의 **워크플로우 F(양식 있음) 또는 A(양식 없음)**로 재생성 → 재생성물에 `fill_hwpx.py check --strict` 통과 후, **주력 hwpx 스킬의 page_guard·content_guard·gonmun_lint를 다시 적용**(스크립트는 `.claude/skills/hwpx/scripts/` 경로로 직접 실행)해야 완료
+1. validate (스키마 검증 + **11개 최소 패키지 완비**) — 패키지 누락이 뜨면 **한컴에서 열어 「다른 이름으로 저장」**이 가장 확실한 복구다. 한글은 파일이 빠져도 그냥 열기 때문에 6단계 COM 실열림으로는 절대 안 잡힌다 → 근거: hwpx SKILL.md 「실패 이력」 2026. 8. 20.(사후 대조). 스키마 실패 시 F4: validate 재실행 1회 → 여전히 실패 시 hwpx-fallback의 **워크플로우 F(양식 있음) 또는 A(양식 없음)**로 재생성 → 재생성물에 `fill_hwpx.py check --strict` 통과 후, **주력 hwpx 스킬의 page_guard·content_guard·gonmun_lint를 다시 적용**(스크립트는 `.claude/skills/hwpx/scripts/` 경로로 직접 실행)해야 완료
 2. fix_namespaces 실행
 3. finalize_hwpx --strip-linesegarray (줄 배치 캐시 제거 + 레이아웃 위험 경고)
 4. validate --layout

@@ -21,11 +21,20 @@ from zipfile import ZIP_STORED, BadZipFile, ZipFile
 
 from lxml import etree
 
+# 주력 hwpx 스킬과 동일 기준으로 맞춤 (2026. 8. 20.). 폴백으로 재생성한 문서도
+# 결국 주력 스킬의 가드를 다시 통과해야 하므로 여기서 느슨하면 왕복만 늘어난다.
 REQUIRED_FILES = [
     "mimetype",
+    "version.xml",
+    "settings.xml",
     "Contents/content.hpf",
     "Contents/header.xml",
     "Contents/section0.xml",
+    "META-INF/container.xml",
+    "META-INF/container.rdf",
+    "META-INF/manifest.xml",
+    "Preview/PrvImage.png",
+    "Preview/PrvText.txt",
 ]
 
 EXPECTED_MIMETYPE = "application/hwp+zip"
