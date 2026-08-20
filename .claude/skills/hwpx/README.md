@@ -1,5 +1,7 @@
 # hwpxskill
 
+> **이 저장소(Hwp_doc)에서 읽는 사람에게**: 이 README는 업스트림([Canine89/hwpxskill](https://github.com/Canine89/hwpxskill))의 배포용 문서라 예시가 전부 맨 `python3`로 되어 있다. **이 PC에서는 그대로 복사해 쓰면 안 된다** — PATH의 `python3`는 pywin32·python-hwpx가 없는 다른 프로젝트 venv라서 COM 검사가 조용히 죽는다. 실제 실행 규칙(인터프리터 절대 경로, 필수 검증 순서, 셀 예산 규칙)은 [`SKILL.md`](SKILL.md)의 「환경」·「기본 동작 모드」 절을 따른다.
+
 한컴오피스 HWPX 문서를 AI 코딩 에이전트에서 다룰 수 있게 해주는 스킬입니다.
 
 서식 보존이 중요한 편집에서는 OWPML XML을 직접 다루는 방식을 택했습니다. 덕분에 기존 문서의 서식이나 구조를 거의 그대로 유지하면서 내용만 갈아끼울 수 있습니다.

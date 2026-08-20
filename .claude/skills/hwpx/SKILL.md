@@ -30,6 +30,8 @@ HWPX는 ZIP 기반 XML 컨테이너(OWPML 표준)이다. 서식 보존이 중요
 6. **최종화/레이아웃 경고**: `fix_namespaces.py`, `finalize_hwpx.py --strip-linesegarray --layout`, `validate.py --layout`로 네임스페이스와 렌더링 위험을 점검한다
 7. **글자 예산/쪽수 가드(필수)**: `page_guard.py`로 문단/셀별 글자 예산과 레퍼런스 대비 페이지 드리프트 위험 검사
 8. **내용 완성도 가드(필수)**: `content_guard.py`로 원문 잔재, placeholder, 필수 키워드 누락을 검사한다
+9. **한컴 실열림(필수)**: `finalize_hwpx.py --hancom`으로 한글이 실제로 파일을 여는지 COM으로 확인한다 (pywin32 + 보안모듈 등록 완료, 2026. 7. 18.)
+10. **셀 폭 초과 육안 검증(조건부 필수)**: 셀 예산을 넘긴 텍스트를 넣었으면 PDF로 내보내 이미지로 렌더한 뒤 **직접 본다**. 1~9단계는 전부 통과하면서도 셀 안 줄바꿈·글자 밀림은 못 잡는다 (2026. 8. 20. 실패, 아래 「실패 이력」 참조). 발동 조건과 정책은 프로젝트 CLAUDE.md Validator 6단계가 정본
 
 ### 99% 근접 복원 기준 (실무 체크리스트)
 
@@ -52,19 +54,17 @@ HWPX는 ZIP 기반 XML 컨테이너(OWPML 표준)이다. 서식 보존이 중요
 ### 기본 실행 명령 (첨부 레퍼런스가 있을 때)
 
 ```bash
-source "$VENV"
-
 # 1) 레퍼런스 분석 + XML 추출
-python3 "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx \
+"$PY" "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx \
   --extract-header /tmp/ref_header.xml \
   --extract-section /tmp/ref_section.xml
 
 # 2) 편집 가능한 슬롯 추출
-python3 "$SKILL_DIR/scripts/hwpx_slots.py" reference.hwpx \
+"$PY" "$SKILL_DIR/scripts/hwpx_slots.py" reference.hwpx \
   --output /tmp/reference.slots.json
 
 # 3) 원본 양식의 문단/셀별 글자 예산 저장
-python3 "$SKILL_DIR/scripts/page_guard.py" \
+"$PY" "$SKILL_DIR/scripts/page_guard.py" \
   --reference reference.hwpx \
   --write-budget /tmp/reference.budget.json \
   --write-structure /tmp/reference.structure.json
@@ -80,18 +80,18 @@ cat > /tmp/content.rules.json <<'JSON'
 JSON
 
 # 4) 양식 보존 편집
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" reference.hwpx \
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" reference.hwpx \
   --output result.hwpx \
   --slot-json values.json
 
 # 5) 검증 + 최종화
-python3 "$SKILL_DIR/scripts/validate.py" result.hwpx
-python3 "$SKILL_DIR/scripts/fix_namespaces.py" result.hwpx
-python3 "$SKILL_DIR/scripts/finalize_hwpx.py" result.hwpx --strip-linesegarray --layout
-python3 "$SKILL_DIR/scripts/validate.py" result.hwpx --layout
+"$PY" "$SKILL_DIR/scripts/validate.py" result.hwpx
+"$PY" "$SKILL_DIR/scripts/fix_namespaces.py" result.hwpx
+"$PY" "$SKILL_DIR/scripts/finalize_hwpx.py" result.hwpx --strip-linesegarray --layout
+"$PY" "$SKILL_DIR/scripts/validate.py" result.hwpx --layout
 
 # 6) 글자 예산 + 쪽수 드리프트 가드 (필수)
-python3 "$SKILL_DIR/scripts/page_guard.py" \
+"$PY" "$SKILL_DIR/scripts/page_guard.py" \
   --reference reference.hwpx \
   --output result.hwpx \
   --budget-profile /tmp/reference.budget.json \
@@ -101,17 +101,32 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
   --allow-empty-fill
 
 # 7) 내용 완성도 가드 (필수)
-python3 "$SKILL_DIR/scripts/content_guard.py" result.hwpx \
+"$PY" "$SKILL_DIR/scripts/content_guard.py" result.hwpx \
   --rules /tmp/content.rules.json
 
 # 문서 전체 관점 전환/전면 재작성인 경우 원본 긴 문장 잔존율도 제한
-python3 "$SKILL_DIR/scripts/content_guard.py" result.hwpx \
+"$PY" "$SKILL_DIR/scripts/content_guard.py" result.hwpx \
   --reference reference.hwpx \
   --rules /tmp/content.rules.json \
   --max-unchanged-ratio 0.35
 
 # 공문서라면 날짜/시간/금액/붙임 표기도 점검
-python3 "$SKILL_DIR/scripts/gonmun_lint.py" --hwpx result.hwpx --format text
+"$PY" "$SKILL_DIR/scripts/gonmun_lint.py" --hwpx result.hwpx --format text
+
+# 8) 한컴 실열림 (필수, Windows + 한글 설치 환경)
+"$PY" "$SKILL_DIR/scripts/finalize_hwpx.py" result.hwpx --hancom
+
+# 9) PDF 렌더 육안 확인 (필수) — 기계 검사가 못 보는 것을 사람/에이전트의 눈으로 본다
+#    render_check.py는 이 스킬이 아니라 프로젝트 scripts/에 있다
+"$PY" scripts/render_check.py result.hwpx --reference reference.hwpx --keep-pdf /tmp/result.pdf
+"$PY" -c "
+import fitz, sys
+d = fitz.open(sys.argv[1])
+for i, page in enumerate(d):
+    page.get_pixmap(dpi=140).save(sys.argv[2] + f'/page{i}.png')
+print('rendered', len(d), 'pages')
+" /tmp/result.pdf /tmp
+#    → 생성된 png를 Read 도구로 열어 실제로 눈으로 확인한다 (셀 안 줄바꿈·글자 밀림은 여기서만 보인다)
 ```
 
 `hwpx_slots.py`는 표/그림/텍스트상자를 품은 컨테이너 문단을 제외하고, 실제 편집 가능한 문단과 표 셀을 슬롯으로 노출한다. 사용자는 슬롯 키에 값만 넣으면 된다.
@@ -124,28 +139,28 @@ python3 "$SKILL_DIR/scripts/gonmun_lint.py" --hwpx result.hwpx --format text
 
 ```bash
 # 전체 텍스트 치환
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
   -o out.hwpx \
   --replace "기존문구=새문구"
 
 # JSON 매핑 치환
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
   -o out.hwpx \
   --replace-json values.json
 
 # 표 셀 채우기: row,col은 0부터 시작, table 생략 시 첫 번째 표
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
   -o out.hwpx \
   --cell "0,2,1=테스트 법인"
 
 # 본문 문단 재작성: 문장 품질을 우선하고 원본 문단 예산 이하로만 제한
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
   -o out.hwpx \
   --paragraph-json paragraphs.json
 
 # 권장: 슬롯 키 기반 채우기
-python3 "$SKILL_DIR/scripts/hwpx_slots.py" form.hwpx -o slots.json
-python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
+"$PY" "$SKILL_DIR/scripts/hwpx_slots.py" form.hwpx -o slots.json
+"$PY" "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
   -o out.hwpx \
   --slot-json values.json
 ```
@@ -200,7 +215,18 @@ python3 "$SKILL_DIR/scripts/edit_hwpx.py" form.hwpx \
 
 ZIP 엔트리의 `flag_bits`도 원본과 같아야 한다. Python `zipfile.writestr()`로 전체 엔트리를 다시 쓰면 `flag_bits`와 압축 바이트가 바뀔 수 있으므로 사용하지 않는다. 반드시 원시 ZIP 복사 방식으로 변경 대상 엔트리만 교체한다.
 
-`edit_hwpx.py`는 기본적으로 입력 전 글자수 예산과 기본 문장 품질을 검사한다. `--paragraph` 값은 원본 문단 예산 이하여야 하고, `--cell` 값은 원본 셀 예산을 넘으면 안 된다. `--replace`의 새 값이 기존 자리보다 길면 쓰기 전에 실패한다. `--allow-over-budget`은 사용자가 명시적으로 위험을 감수할 때만 쓴다.
+`edit_hwpx.py`는 기본적으로 입력 전 글자수 예산과 기본 문장 품질을 검사한다. `--paragraph` 값은 원본 문단 예산 이하여야 하고, `--cell` 값은 원본 셀 예산을 넘으면 안 된다. `--replace`의 새 값이 기존 자리보다 길면 쓰기 전에 실패한다.
+
+#### `--allow-over-budget`과 셀 폭 (2026. 8. 20. 승격)
+
+**기본은 텍스트를 줄여 예산 안에 넣는 것이다. `--allow-over-budget`은 셀 폭을 실제로 확인했을 때만 쓴다** — 이 플래그는 예산 *검사*를 끄는 것이지 셀 폭이 늘어나는 게 아니다.
+
+셀 예산은 셀 폭과 글자 크기에서 나온 값이라, 초과분은 한글에서 **셀 안 줄바꿈**으로 나타난다. 그런데 그 줄바꿈은 스키마 검증에도, `page_guard`(쪽수·구조)에도, `render_check`(쪽수·순서)에도, 한컴 실열림에도 **전혀 걸리지 않는다** — 쪽수가 그대로면 전부 PASS다. 즉 예산 경고가 이 실패를 잡을 수 있는 **유일한 기계 신호**이고, 그것을 끄면 남는 방어선은 사람 눈뿐이다.
+
+- 셀·짧은 필드(날짜·이름·전화번호·금액)는 예산 초과 시 **축약을 먼저 시도**한다. 예: `센터 이동 및 로봇 스포츠 챌린지` → `이동·로봇 체험`, `학교 복귀 및 귀가 지도` → `복귀·귀가 지도`
+- 축약이 의미를 훼손해서 불가능하면, 넘기지 말고 **사용자에게 판단을 요청**한다 (셀 폭을 넓힐지, 문구를 바꿀지).
+- 그래도 초과분을 쓰기로 했다면 반드시 ① 그 결정을 보고에 명시하고 ② PDF 렌더 이미지로 해당 셀을 눈으로 확인한 뒤 제출한다.
+- 괄호쌍·단위처럼 **쪼개지면 안 되는 짧은 토큰**(`참가 (   )`의 닫는 괄호 등)은 예산이 아슬아슬하면 여유를 더 둔다.
 
 ### 내용 완성도 가드 규칙
 
@@ -210,6 +236,7 @@ ZIP 엔트리의 `flag_bits`도 원본과 같아야 한다. Python `zipfile.writ
 - 양식 placeholder를 채우는 경우: `○○`, `{{name}}`, `... . .` 같은 잔여 placeholder를 금지한다.
 - 새 문서 관점의 핵심어가 반드시 있어야 하는 경우: 새 기관명, 새 법인명, 새 담당 부서 등을 `require`에 넣는다.
 - 여러 붙임/참고/담당자 표가 있는 문서에서는 앞부분만 바꾸지 말고 전체 텍스트 추출 결과에 대해 `content_guard.py`를 실행한다.
+- **기존 문서를 베이스로 재활용/재발송하는 경우(필수)**: 베이스 문서의 고유 명칭(행사명·강사명·기관명)과 **본문에 박힌 옛 날짜**(배부일·시행일·서명일)를 전부 `forbid`에 넣는다. "문구가 회차 무관 범용"이어도 날짜는 항상 새 배부일로 갱신해야 한다 — 2026. 7. 18. 기출문제 공개 안내에서 본문 끝 "2026. 4. 7. 화동중학교장"이 그대로 남은 것을 사용자가 잡아냈다. 2026. 8. 20. 가통도 5980 발송본을 베이스로 삼아 `인순이`·`명사`·`문화예술회관`·`석식`·`2025`를 forbid에 넣어 통과시켰다.
 - “내용을 싹 바꾸라”, “미국에서 작성한 것처럼 바꾸라”처럼 전면 재작성 요청이면 `--reference`와 `--max-unchanged-ratio`를 함께 사용한다. 원본의 긴 문장이 많이 남으면 구조가 정상이어도 실패다.
 
 예시:
@@ -224,24 +251,26 @@ ZIP 엔트리의 `flag_bits`도 원본과 같아야 한다. Python `zipfile.writ
 
 `content_guard.py`가 실패하면 구조가 아무리 정상이어도 결과를 완료로 제출하지 않는다. 실패 목록을 보고 남은 슬롯을 추가 수정하거나, 문서 전체 재작성 범위를 넓힌 뒤 다시 빌드한다.
 
-## 환경
+## 환경 (2026. 8. 20. 실측)
 
-```
-# SKILL_DIR는 이 SKILL.md가 위치한 디렉토리의 절대 경로로 설정
-SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # 스크립트 내에서
-# 또는 Claude Code가 자동으로 주입하는 base directory 경로를 사용
-
-# Python 가상환경 (프로젝트에 맞게 설정)
-VENV="<프로젝트>/.venv/bin/activate"
-```
-
-모든 Python 실행 시:
 ```bash
-# 프로젝트의 .venv를 활성화 (pip install lxml 필요)
-source "$VENV"
+# 이 SKILL.md가 있는 디렉토리
+SKILL_DIR="<프로젝트>/.claude/skills/hwpx"
+# 또는 Claude Code가 주입하는 base directory 경로
+
+# 인터프리터 — 반드시 시스템 Python 3.12를 절대 경로로 지정한다
+PY="C:/Users/22/AppData/Local/Programs/Python/Python312/python.exe"
 ```
 
-프로젝트에 `.venv`가 없으면 `source` 단계를 생략하고 시스템 `python3`(lxml 필요)를 그대로 사용한다. Windows venv는 `.venv/Scripts/activate`.
+**`python` / `python3` / `py`를 그냥 쓰지 않는다.** 이 PC의 PATH에서 셋 다 `textbook_wiki/.venv`로 해석되고, 그 venv에는 **pywin32도 python-hwpx도 없다**. 즉 맨 이름으로 부르면 lxml만 쓰는 스크립트는 우연히 돌아가지만 COM 계열(`finalize_hwpx.py --hancom`, 프로젝트 `scripts/render_check.py`)과 `create_document.py`는 조용히 실패한다. 실제로 2026. 8. 20. 가정통신문 작업에서 `--hancom`이 이 이유로 한 번 죽었고 시스템 Python312로 재실행해서 통과시켰다.
+
+| 인터프리터 | lxml | PyMuPDF·pypdf | pywin32 | python-hwpx | 용도 |
+|---|---|---|---|---|---|
+| `Python312\python.exe` (시스템) | O | O | O | O | **전부 여기서 실행** |
+| PATH의 `python`/`python3`/`py` (textbook_wiki venv) | O | O | **X** | **X** | 쓰지 말 것 |
+| `python3.exe` (Store 3.14) | 별도 site-packages | — | — | `--no-deps` 설치 필요 | 쓰지 말 것 |
+
+`$PY`가 아닌 인터프리터로 돌렸다면 그 사실을 보고에 남긴다. 이 문서의 모든 예시는 `"$PY"`를 전제로 한다.
 
 ## 디렉토리 구조
 
@@ -254,6 +283,8 @@ source "$VENV"
 │   │   └── pack.py                       # 디렉토리 → HWPX
 │   ├── build_hwpx.py                     # 템플릿 + XML → .hwpx 조립 (핵심)
 │   ├── edit_hwpx.py                      # 원본 패키지 보존 + 텍스트/셀 최소 수정
+│   ├── hwpx_slots.py                     # 편집 가능한 문단/셀 슬롯 추출 (edit_hwpx --slot-json의 입력)
+│   ├── create_document.py                # 마크다운 → HWPX 초고속 경로 (python-hwpx 필요)
 │   ├── analyze_template.py               # HWPX 심층 분석 (레퍼런스 기반 생성용)
 │   ├── validate.py                       # HWPX 구조 검증
 │   ├── fix_namespaces.py                 # 표준 네임스페이스 프리픽스/header itemCnt 보정
@@ -270,9 +301,14 @@ source "$VENV"
 │   ├── report/                           # 보고서 오버레이
 │   ├── minutes/                          # 회의록 오버레이
 │   └── proposal/                         # 제안서/사업개요 오버레이 (색상 헤더바, 번호 배지)
+├── tests/
+│   └── test_hwpx_guards.py               # page_guard·content_guard 회귀 테스트
 └── references/
-    └── hwpx-format.md                    # OWPML XML 요소 레퍼런스
+    ├── hwpx-format.md                    # OWPML XML 요소 레퍼런스
+    └── jkf87-hwpx-skill-comparison.md    # 폴백 스킬(hwpx-fallback)과의 기능 대조
 ```
+
+`templates/base/`는 **11개 파일 전부**(mimetype · version.xml · settings.xml · META-INF 3종 · Contents 3종 · Preview 2종)를 갖고 있어야 `build_hwpx.py` 신규 생성이 동작한다. 2026. 8. 1.까지 `Contents/`·`META-INF/`·`Preview/`가 통째로 빠져 있어 신규 생성이 실패했고, python-hwpx 빈 문서 스켈레톤으로 보수했다(validate + COM 실열림 검증 완료). 다른 프로젝트로 이식할 때 이 11개를 먼저 확인할 것 — 전체 이식 절차는 프로젝트의 `docs/신규생성-이식-가이드.md`에 있다.
 
 ---
 
@@ -288,25 +324,33 @@ source "$VENV"
 
 > 원칙: 사용자가 레퍼런스 HWPX를 제공한 경우에는 이 워크플로우 대신 상단의 "기본 동작 모드(레퍼런스 복원 우선)"를 사용한다.
 
+#### 신규 생성 경로 3가지 (2026. 8. 1. 전부 실행 검증)
+
+| 경로 | 방법 | 언제 |
+|---|---|---|
+| **A (표준)** | `build_hwpx.py --template <유형> --section my_section0.xml` | 기본. 스킬 템플릿이 있는 환경 |
+| **B (기증자)** | 유효한 HWPX 하나를 `office/unpack.py`로 풀어 `header.xml`·`section0.xml`만 교체 → `office/pack.py` | 스킬 `templates/`가 없는 환경으로 이식했을 때. 가장 확실 |
+| **C (마크다운)** | `create_document.py --input content.md --output result.hwpx` | 초안·간단 문서. 서식 제어 제한적, python-hwpx 필요 |
+
+경로 B에서는 나머지 9개 파일을 손대지 않는다. `--pretty`로 푼 디렉토리는 pack 입력으로 쓰지 않고, 일반 ZIP 명령으로 재압축하지 않는다. 상세 절차와 검증 기록은 프로젝트 `docs/신규생성-이식-가이드.md`.
+
 ### 기본 사용법
 
 ```bash
-source "$VENV"
-
 # 빈 문서 (base 템플릿)
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --output result.hwpx
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --output result.hwpx
 
 # 템플릿 사용
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --template gonmun --output result.hwpx
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --template gonmun --output result.hwpx
 
 # 커스텀 section0.xml 오버라이드
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --template gonmun --section my_section0.xml --output result.hwpx
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --template gonmun --section my_section0.xml --output result.hwpx
 
 # header도 오버라이드
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --header my_header.xml --section my_section0.xml --output result.hwpx
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --header my_header.xml --section my_section0.xml --output result.hwpx
 
 # 메타데이터 설정
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --template report --section my.xml \
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --template report --section my.xml \
   --title "제목" --creator "작성자" --output result.hwpx
 ```
 
@@ -330,7 +374,7 @@ cat > "$SECTION" << 'XMLEOF'
 XMLEOF
 
 # 2. 빌드
-python3 "$SKILL_DIR/scripts/build_hwpx.py" --section "$SECTION" --output result.hwpx
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" --section "$SECTION" --output result.hwpx
 
 # 3. 정리
 rm -f "$SECTION"
@@ -585,20 +629,18 @@ section0.xml의 첫 문단(`<hp:p>`)의 첫 런(`<hp:run>`)에 반드시 `<hp:se
 ## 워크플로우 2: 기존 문서 편집 (unpack → Edit → pack)
 
 ```bash
-source "$VENV"
-
 # 1. HWPX → 디렉토리 (기본값은 XML 바이트 보존)
-python3 "$SKILL_DIR/scripts/office/unpack.py" document.hwpx ./unpacked/
+"$PY" "$SKILL_DIR/scripts/office/unpack.py" document.hwpx ./unpacked/
 
 # 2. XML 직접 편집 (Claude가 Read/Edit 도구로)
 #    본문: ./unpacked/Contents/section0.xml
 #    스타일: ./unpacked/Contents/header.xml
 
 # 3. 다시 HWPX로 패키징
-python3 "$SKILL_DIR/scripts/office/pack.py" ./unpacked/ edited.hwpx
+"$PY" "$SKILL_DIR/scripts/office/pack.py" ./unpacked/ edited.hwpx
 
 # 4. 검증
-python3 "$SKILL_DIR/scripts/validate.py" edited.hwpx
+"$PY" "$SKILL_DIR/scripts/validate.py" edited.hwpx
 ```
 
 `unpack.py --pretty`는 사람이 XML을 읽기 좋게 확인할 때만 사용한다. HWPX의 `hp:t`는 텍스트와 `hp:fwSpace`, `hp:lineBreak` 같은 자식 컨트롤이 섞인 mixed content를 가질 수 있고, pretty-print가 삽입한 줄바꿈/공백이 한컴에서 실제 텍스트처럼 렌더링될 수 있다. 따라서 `--pretty`로 푼 디렉토리를 다시 `pack.py` 입력으로 사용하지 않는다.
@@ -608,16 +650,14 @@ python3 "$SKILL_DIR/scripts/validate.py" edited.hwpx
 ## 워크플로우 3: 읽기/텍스트 추출
 
 ```bash
-source "$VENV"
-
 # 순수 텍스트
-python3 "$SKILL_DIR/scripts/text_extract.py" document.hwpx
+"$PY" "$SKILL_DIR/scripts/text_extract.py" document.hwpx
 
 # 테이블 포함
-python3 "$SKILL_DIR/scripts/text_extract.py" document.hwpx --include-tables
+"$PY" "$SKILL_DIR/scripts/text_extract.py" document.hwpx --include-tables
 
 # 마크다운 형식
-python3 "$SKILL_DIR/scripts/text_extract.py" document.hwpx --format markdown
+"$PY" "$SKILL_DIR/scripts/text_extract.py" document.hwpx --format markdown
 ```
 
 ### Python API
@@ -634,8 +674,7 @@ with TextExtractor("document.hwpx") as ext:
 ## 워크플로우 4: 검증
 
 ```bash
-source "$VENV"
-python3 "$SKILL_DIR/scripts/validate.py" document.hwpx
+"$PY" "$SKILL_DIR/scripts/validate.py" document.hwpx
 ```
 
 검증 항목: ZIP 유효성, 필수 파일 존재, mimetype 내용/위치/압축방식, XML well-formedness
@@ -659,13 +698,11 @@ python3 "$SKILL_DIR/scripts/validate.py" document.hwpx
 ### 사용법
 
 ```bash
-source "$VENV"
-
 # 1. 심층 분석 (구조 청사진 출력)
-python3 "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx
+"$PY" "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx
 
 # 2. header.xml과 section0.xml을 추출하여 참고용으로 보관
-python3 "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx \
+"$PY" "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx \
   --extract-header /tmp/ref_header.xml \
   --extract-section /tmp/ref_section.xml
 
@@ -675,16 +712,16 @@ python3 "$SKILL_DIR/scripts/analyze_template.py" reference.hwpx \
 #    - 동일한 borderFillIDRef, cellMargin
 
 # 4. 추출한 header.xml + 새 section0.xml로 빌드
-python3 "$SKILL_DIR/scripts/build_hwpx.py" \
+"$PY" "$SKILL_DIR/scripts/build_hwpx.py" \
   --header /tmp/ref_header.xml \
   --section /tmp/new_section0.xml \
   --output result.hwpx
 
 # 5. 검증
-python3 "$SKILL_DIR/scripts/validate.py" result.hwpx
+"$PY" "$SKILL_DIR/scripts/validate.py" result.hwpx
 
 # 6. 쪽수 드리프트 가드 (필수)
-python3 "$SKILL_DIR/scripts/page_guard.py" \
+"$PY" "$SKILL_DIR/scripts/page_guard.py" \
   --reference reference.hwpx \
   --output result.hwpx
 ```
@@ -717,6 +754,9 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 | 스크립트 | 용도 |
 |----------|------|
 | `scripts/build_hwpx.py` | **핵심** — 템플릿 + XML → HWPX 조립 |
+| `scripts/edit_hwpx.py` | 원본 패키지 보존 + 슬롯/셀 최소 수정 (**양식이 있으면 1순위**) |
+| `scripts/hwpx_slots.py` | 편집 가능한 문단/셀 슬롯 추출 → `edit_hwpx.py --slot-json` 입력 |
+| `scripts/create_document.py` | 마크다운 → HWPX 초고속 경로 (python-hwpx 필요, 서식 제어 제한적) |
 | `scripts/analyze_template.py` | HWPX 심층 분석 (레퍼런스 기반 생성의 청사진) |
 | `scripts/office/unpack.py` | HWPX → 디렉토리 (기본 XML 바이트 보존, `--pretty`는 검사 전용) |
 | `scripts/office/pack.py` | 디렉토리 → HWPX (mimetype first) |
@@ -726,7 +766,8 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 | `scripts/page_guard.py` | 레퍼런스 대비 페이지 드리프트 위험 검사 (필수 게이트) |
 | `scripts/content_guard.py` | 원문 잔재, placeholder, 필수 키워드 누락 검사 |
 | `scripts/gonmun_lint.py` | 공문서 날짜/시간/금액/붙임 표기 검수 |
-| `scripts/text_extract.py` | HWPX 텍스트 추출 |
+| `scripts/text_extract.py` | HWPX 텍스트 추출 (kordoc MCP 불가 시 읽기 폴백) |
+| (프로젝트) `scripts/render_check.py` | **스킬 밖** — COM 쪽수 대조 + PDF 내보내기로 렌더링 붕괴 검사, `--keep-pdf`로 육안 확인용 PDF 보존 |
 
 ## 단위 변환
 
@@ -741,6 +782,33 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 | 좌우여백 | 8504 | 30mm |
 | 본문폭 | 42520 | 150mm (A4-좌우여백) |
 
+## 실패 이력 (실제로 일어난 것만)
+
+이 스킬의 규칙은 예방적 상상이 아니라 **실제 사고**에서 나왔다. 새 규칙을 추가할 때도 같은 기준을 지킨다 — 실패 2회가 규칙 1개.
+
+**이 표가 근거의 집결지다.** 프로젝트 CLAUDE.md는 규칙 한 줄만 두고 "근거: SKILL.md 「실패 이력」 <날짜>"로 이 표를 가리킨다. 새 실패를 겪으면 규칙은 CLAUDE.md에, 무슨 일이 있었는지는 여기에 적는다.
+
+| 날짜 | 무엇이 뚫렸나 | 왜 기계 검사가 못 잡았나 | 지금의 방어선 |
+|---|---|---|---|
+| 2026. 7. 7. | 재활용 문서에 직전 행사(사람책 도서관) 명칭이 예산·기대효과에 잔존 | 스키마·구조는 정상 | `content_guard` forbid에 베이스의 고유 명칭 |
+| 2026. 7. 13.·7. 15. | finalize 이전에 뜬 `--write-budget/--write-structure` 프로파일이 자기 자신을 FAIL시킴 (2회 재발) | 프로파일이 낡은 패키징 기준 | 프로파일은 **3단계 finalize 완료 후** 결과물에서만 생성 |
+| 2026. 7. 17. | `.hwp`→hwpx 변환본(pyhwp)에서 세로쓰기 캡션 역순·표 앵커 붕괴 | 텍스트 계층 검증 7겹이 **전부 통과** | 편집 베이스 변환은 한글 COM 네이티브 저장 1순위 + `render_check.py` 필수 |
+| 2026. 7. 18. | 재발송 가통 본문 끝 날짜가 `2026. 4. 7.`(1학기)로 잔존 | 본문 텍스트 검사엔 걸릴 이유가 없음(형식은 정상) | 재사용 시 옛 날짜를 forbid에 명시 |
+| 2026. 7. 18. | COM 실열림 검사 때마다 보안 승인 대화상자가 떠 사용자가 클릭 중이었음 | 에이전트는 화면을 못 봄 → "미발생"으로 오판 | `FilePathCheckerModule` 레지스트리 등록(무클릭 PASS) |
+| 2026. 7. 18.(2건) | 배부일 셀 예산 1자 초과를 "구조적 한계"라며 그대로 제출 | 예산 경고를 무시 처리 | ↓ 아래 항목으로 승격 |
+| **2026. 8. 20. (v2)** | **표 셀 글자가 셀 폭을 넘겨 렌더링에서 줄바꿈**(`불참 (` 뒤 닫는 괄호가 다음 줄로) | validate·page_guard·content_guard·gonmun_lint·COM 실열림·render_check **전부 PASS**. 예산 경고는 있었으나 `--allow-over-budget`으로 넘김 | 축약이 기본, `--allow-over-budget`은 폭 확인 시에만 + **PDF 렌더 이미지 육안 확인** |
+| **2026. 8. 20. (v3)** | 셀 폭은 고쳤으나 **4행짜리 베이스 양식에 활동 5개를 뭉쳐 넣어** 내용이 훼손 (「센터 이동 및 로봇 스포츠 챌린지」 → 「이동·로봇 체험」) | 예산·구조 검사는 "행이 모자라다"를 모른다. 오히려 예산을 지키려 할수록 뭉개는 쪽으로 유도된다 | **행 수는 내용에 맞춘다** — 행 추가는 「의도된 구조 변경 경로」로 승인·검증하면 되는 정상 경로다. 행을 늘릴 때 행 높이도 함께 확보 |
+| **2026. 8. 20. (최종)** | 에이전트가 만든 재패키징본보다 **사용자가 한글에서 직접 고쳐 저장한 최종본**이 품질이 높았음 | 기계 검사로는 잡을 수 없는 종류의 차이(네이티브 저장 = Preview·container.rdf 정상) | 사람 최종본을 `knowledge/templates/`로 **승격**해 다음 작업의 베이스로 삼는다 (`가정통신문-회신형`) |
+
+## 알려진 한계 (재발견·재제안 금지)
+
+- **`content.hpf` 메타데이터는 갱신되지 않는다.** `edit_hwpx.py --slot-json`은 `section0.xml`의 슬롯 텍스트만 바꾸므로, 한글 "문서 속성"에는 템플릿이 유래한 옛 문서의 제목·작성일이 남는다. 2026. 7. 18. 사용자 확정: **갱신 불필요**("메타데이터는 난 못봐"). Validator 단계 추가를 다시 제안하지 않는다. 중요한 것은 본문에 **보이는** 잔재뿐이다.
+- **빈 셀 자동 검사는 만들지 않는다.** 2026. 7. 15. 제안 → 사용자 거절. 표의 빈 셀은 병합 자리·의도적 공란인 경우가 많아 소음이 된다. 발견하면 검토 요청에 한 줄로만 언급한다.
+- **표의 행·열 삭제는 에이전트가 하지 않는다.** 미응시 학년 등으로 행·열이 통째로 비는 경우, 사용자는 삭제된 표를 선호하지만 **직접 하겠다**고 두 번 확정했다(2026. 7. 18.) — 구조 변경은 재생성 경로라 비용 대비 이득이 없다는 판단. 에이전트는 선례대로 라벨링("정상수업" 등)해 두고 "필요하면 직접 지워달라"고 한 줄 안내만 한다.
+- **사용자가 안 알려준 값은 결함이 아니다.** 관련번호처럼 제공되지 않은 정보를 placeholder로 남겨 `content_guard`/`page_guard`가 FAIL해도, 지어내지 않은 것이 정답이다. 사과하지 말고 "예상된 정상 상태"로만 담백하게 보고한다.
+- **파일이 한글에서 열려 있으면 덮어쓰기가 실패한다** ("Device or resource busy"). 사용자가 검토하려고 열어둔 경우가 흔하므로, 쓰기 실패 시 이 가능성부터 확인한다.
+- **Bash heredoc은 백슬래시를 잃는다.** 이 환경에서 `<<'EOF'` 인용 heredoc으로도 `\\[`가 `\[`로 줄어 JSON이 깨진다 (이 줄을 쓸 때도 실제로 한 번 깨졌다). `content_guard` 규칙 JSON처럼 정규식 이스케이프가 있는 파일은 **Write 도구로** 만든다.
+
 ## Critical Rules
 
 1. **HWPX만 지원 / HWP 작성 거부**: `.hwp`(바이너리) 파일 작성, 생성, 저장, 직접 편집, 채우기 요청은 거부한다. 사용자가 명시적으로 HWPX 대체 산출물을 허용한 경우에만 `.hwpx`로 작업한다. 사용자가 `.hwp` 파일을 제공하면 **한글 오피스에서 `.hwpx`로 다시 저장**하도록 안내할 것. (파일 → 다른 이름으로 저장 → 파일 형식: HWPX)
@@ -749,7 +817,7 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 4. **네임스페이스 보존**: XML 편집 시 `hp:`, `hs:`, `hh:`, `hc:` 접두사 유지
 5. **itemCnt 정합성**: header.xml의 charProperties/paraProperties/borderFills itemCnt가 실제 자식 수와 일치
 6. **ID 참조 정합성**: section0.xml의 charPrIDRef/paraPrIDRef가 header.xml 정의와 일치
-7. **venv 사용**: 프로젝트의 `.venv/bin/python3` (lxml 패키지 필요)
+7. **인터프리터 고정**: 맨 `python`/`python3`가 아니라 시스템 Python312 절대 경로(`$PY`)로 실행한다. PATH의 것은 pywin32·python-hwpx가 없어 COM 검사가 조용히 죽는다 (「환경」 절)
 8. **검증**: 생성 후 반드시 `validate.py`로 무결성 확인
 9. **레퍼런스**: 상세 XML 구조는 `$SKILL_DIR/references/hwpx-format.md` 참조
 10. **build_hwpx.py 우선**: 새 문서 생성은 build_hwpx.py 사용 (python-hwpx API 직접 호출 지양)
@@ -760,3 +828,5 @@ python3 "$SKILL_DIR/scripts/page_guard.py" \
 15. **무단 페이지 증가 금지**: 사용자 명시 요청/승인 없이 쪽수 증가를 유발하는 구조 변경 금지
 16. **구조 변경 제한**: 사용자 요청이 없는 한 문단/표의 추가·삭제·분할·병합 금지 (치환 중심 편집)
 17. **page_guard 필수 통과**: `validate.py`와 별개로 `page_guard.py`를 반드시 통과해야 완료 처리
+18. **셀 예산은 축약이 기본**: 표 셀·짧은 필드가 예산을 넘으면 문구를 줄이거나 사용자에게 묻는다. `--allow-over-budget`은 셀 폭을 실제로 확인했을 때만 (2026. 8. 20. 렌더링 붕괴)
+19. **눈으로 볼 것**: 예산을 넘겨 넣었다면 기계 검사 전건 PASS도 완료가 아니다. PDF 렌더 이미지로 그 셀을 확인하고, 마지막에 항상 **"발송 전 한글로 열어 확인해주세요"**를 안내한다
