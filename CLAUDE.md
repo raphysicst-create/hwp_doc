@@ -4,6 +4,7 @@
 공문 초안 작성 → HWPX 생성 → 검증까지 자동화한다. 전자결재(온나라) 등록은 사람이 한다.
 상세 설계는 `docs/설계도-v4.md` 참조. 이 파일은 매 세션 지켜야 할 실행 규칙이다.
 **운영 원칙: 실패 주도 성장** — 규칙·데이터·자동화는 실제 발생한 실패에서만 추가한다.
+**문서 분업 (2026. 8. 21.)**: 이 파일은 **규칙**만 둔다. 실패 사례·개정 경위는 `hwpx` SKILL.md 「실패 이력」에 적고 여기서는 `(근거: 7. 17.)`로 그 날짜 행을 가리킨다. 기계가 강제하게 된 규칙은 산문을 줄이고 도구 이름만 남긴다. 규칙을 추가하는 세션은 이 분업을 먼저 적용해 총량을 유지한다.
 
 ## 확정된 환경
 - Windows + 한글 설치됨 (검토 시 한글 열람 가능)
@@ -24,7 +25,7 @@
 - 새 문서 / 양식 유지 + 내용 교체 → Canine89
 - 특정 셀·문단만 수정 → kordoc patch_document / fill_form
 - 표 구조 변경(행·열·병합) → MD 추출 → 수정 → Canine89 재생성 (우회가 기본)
-- `.hwp` 입력: 읽기는 kordoc 우선, kordoc 실패 시에만 hwpx-fallback의 `convert_hwp.py`로 변환(이 경우만 폴백 스킬 사용 허용). **편집 베이스 변환은 한글 COM 네이티브 저장(pywin32로 Open→SaveAs 'HWPX')이 1순위** — convert_hwp.py는 COM 불가 환경의 폴백으로만 (→ 근거: hwpx SKILL.md 「실패 이력」 2026. 7. 17.). 변환본을 편집 베이스로 쓸 때는 사용자에게 고지. `.hwp`로 결과물을 만드는 것은 항상 거부.
+- `.hwp` 입력: 읽기는 kordoc 우선, kordoc 실패 시에만 hwpx-fallback의 `convert_hwp.py`로 변환(이 경우만 폴백 스킬 사용 허용). **편집 베이스 변환은 한글 COM 네이티브 저장(pywin32로 Open→SaveAs 'HWPX')이 1순위** — convert_hwp.py는 COM 불가 환경의 폴백으로만 (근거: 7. 17.). 변환본을 편집 베이스로 쓸 때는 사용자에게 고지. `.hwp`로 결과물을 만드는 것은 항상 거부.
 - **확신이 없으면 임의 진행하지 말고 사용자에게 질문한다.**
 
 ## 기계화 도구 (LLM 미개입 조회·검증, `scripts/`) — 2026. 7. 15.
@@ -44,8 +45,8 @@
 
 ## 공문서 작성 규정 (2025 개정 기준)
 - **기안문(본문 HWPX) 서체: 전체 굴림, 본문 12pt(height 1200)** — 2026. 7. 13. 사용자 지정 원칙. 기관명 등 제목부는 크기 유지하되 서체는 굴림. 첨부 계획서·가정통신문은 양식(레퍼런스) 서체를 따른다
-- **교직원 실명 최소화 (2026. 7. 17. 승격)**: 계획서·기안문의 인솔·근무·담당 표기는 실명 대신 직책+인원수로 쓴다 (예: "담당교사 외 담임교사 1인", "인솔교사: 2명(담당교사, 담임교사)"). 회의록 참석자 등 실명이 본질인 문서는 예외. 근거: 발송본 환류 2건 — 5650 인솔 실명→직책 수정, 5458 첨부 신판 근무상황 명단 삭제
-- **표 행 수는 내용에 맞춘다 — 양식 행 수에 내용을 뭉개지 않는다 (2026. 8. 20. 승격)**: 활동이 5개면 5행을 쓴다. 베이스 양식의 행이 모자라다고 "이동·로봇 체험"처럼 두 항목을 한 셀에 합치지 말 것. 행 추가는 Validator 5항 "의도된 구조 변경 경로"로 승인·검증하면 되는 정상 경로다. 행을 늘릴 때 **행 높이도 함께 확보**한다(회신형 가통 기준 2723 — 빽빽한 2045보다 넉넉하다). → 근거: hwpx SKILL.md 「실패 이력」 2026. 8. 20.(v3)
+- **교직원 실명 최소화 (2026. 7. 17. 승격)**: 계획서·기안문의 인솔·근무·담당 표기는 실명 대신 직책+인원수로 쓴다 (예: "담당교사 외 담임교사 1인", "인솔교사: 2명(담당교사, 담임교사)"). 회의록 참석자 등 실명이 본질인 문서는 예외 (근거: 발송본 환류 5650·5458)
+- **표 행 수는 내용에 맞춘다 — 양식 행 수에 내용을 뭉개지 않는다 (2026. 8. 20. 승격)**: 활동이 5개면 5행을 쓴다. 베이스 양식의 행이 모자라다고 "이동·로봇 체험"처럼 두 항목을 한 셀에 합치지 말 것. 행 추가는 Validator 5항 "의도된 구조 변경 경로"로 승인·검증하면 되는 정상 경로다. 행을 늘릴 때 **행 높이도 함께 확보**한다(회신형 가통 기준 2723 — 빽빽한 2045보다 넉넉하다). (근거: 8. 20. v3)
 - **가정통신문 레이아웃 (2026. 8. 20. 승격)**: ① **날짜·학교장 명의는 문서 맨 아래** — 절취선 위가 아니라 회신표 아래에 둔다(발신 명의가 회신란까지 덮어야 한다). ② 회신 기한은 본문 안내문에 쓰고 표 아래 각주로 중복 표기하지 않는다. ③ 회신표 1열은 장소·행사명까지 써서 식별되게 한다. ④ **회신 기한은 행사 4일 전**이 기본 — 버스·식수 인원 확정 시간이 필요하다. 2일 전은 늦다
 - 항목부호 8단계 순서: `1.` → `가.` → `1)` → `가)` → `(1)` → `(가)` → `①` → `㉮`
 - 날짜: `2026. 7. 7.` 형식 (연월일 뒤 온점, 월·일 앞자리 0 없음)
@@ -76,17 +77,17 @@
 같은 유형의 지적이 2회 나오면 → 해당 검증 규칙을 Validator에 추가하자고 사용자에게 제안한다.
 
 ## Validator 파이프라인 (생성 후 필수, 순서는 hwpx SKILL.md 기준)
-1. validate (스키마 검증 + **11개 최소 패키지 완비**) — 패키지 누락이 뜨면 **한컴에서 열어 「다른 이름으로 저장」**이 가장 확실한 복구다. 한글은 파일이 빠져도 그냥 열기 때문에 6단계 COM 실열림으로는 절대 안 잡힌다 → 근거: hwpx SKILL.md 「실패 이력」 2026. 8. 20.(사후 대조). 스키마 실패 시 F4: validate 재실행 1회 → 여전히 실패 시 hwpx-fallback의 **워크플로우 F(양식 있음) 또는 A(양식 없음)**로 재생성 → 재생성물에 `fill_hwpx.py check --strict` 통과 후, **주력 hwpx 스킬의 page_guard·content_guard·gonmun_lint를 다시 적용**(스크립트는 `.claude/skills/hwpx/scripts/` 경로로 직접 실행)해야 완료
+1. validate (스키마 검증 + **11개 최소 패키지 완비**) — 누락이 뜨면 **한컴에서 열어 「다른 이름으로 저장」**이 가장 확실한 복구다 (근거: 8. 20. 사후 대조). 스키마 실패 시 F4: validate 재실행 1회 → 여전히 실패 시 hwpx-fallback의 **워크플로우 F(양식 있음) 또는 A(양식 없음)**로 재생성 → 재생성물에 `fill_hwpx.py check --strict` 통과 후, **주력 hwpx 스킬의 page_guard·content_guard·gonmun_lint를 다시 적용**(스크립트는 `.claude/skills/hwpx/scripts/` 경로로 직접 실행)해야 완료
 2. fix_namespaces 실행
 3. finalize_hwpx --strip-linesegarray (줄 배치 캐시 제거 + 레이아웃 위험 경고)
 4. validate --layout
 5. page_guard — 페이지 초과 시 "문맥 유지, 약 10% 압축 재작성" 자기 교정 **최대 2회**, 실패 시 사용자 보고
-   - **의도된 구조 변경 경로**: 사용자가 표 행·열 추가 등 구조 변경을 명시 승인한 작업은 기본 fingerprint 검사가 FAIL하는 것이 정상. 이때는 ① FAIL 사유가 승인된 변경 그 자체뿐인지 확인해 보고에 명시하고, ② 결과물 크기를 원본 자리(폭·높이)에 맞춰 쪽수를 보존하며, ③ 승인된 결과물로 `--write-budget/--write-structure` 프로파일을 재생성해 이후 수정의 새 기준으로 삼는다 (2026. 7. 7. 취약시기 문화체험 v2 사례)
-   - **프로파일 신선도 (2026. 7. 15. 추가, S2)**: `--write-budget/--write-structure` 프로파일은 반드시 3단계 finalize(`--strip-linesegarray`) **완료 후** 결과물에서만 생성한다. finalize 이전 패키징 기준으로 만든 낡은 프로파일은 자기 자신도 FAIL하는 오탐을 낳는다 (→ 근거: hwpx SKILL.md 「실패 이력」 2026. 7. 13.·7. 15.)
+   - **의도된 구조 변경 경로**: 사용자가 표 행·열 추가 등 구조 변경을 명시 승인한 작업은 기본 fingerprint 검사가 FAIL하는 것이 정상. 이때는 ① FAIL 사유가 승인된 변경 그 자체뿐인지 확인해 보고에 명시하고, ② 결과물 크기를 원본 자리(폭·높이)에 맞춰 쪽수를 보존하며, ③ 승인된 결과물로 `--write-budget/--write-structure` 프로파일을 재생성해 이후 수정의 새 기준으로 삼는다 (근거: 7. 7. 취약시기 문화체험 v2)
+   - **프로파일 신선도 (S2)**: `--write-budget/--write-structure` 프로파일은 반드시 3단계 finalize(`--strip-linesegarray`) **완료 후** 결과물에서만 생성한다 (근거: 7. 13.·7. 15.)
 6. `finalize_hwpx.py 결과.hwpx --hancom`으로 한컴 실열림 검사 — **필수 (pywin32 + 보안모듈(FilePathCheckerModule) 설치·등록 완료, 무대화상자 실동작 검증, 2026. 7. 18.)**. COM 오류로 불가하면 그 사실을 보고에 명시. 승인 대화상자가 재발하면 `HKCU\Software\HNC\HwpAutomation\Modules`의 FilePathCheckerModule 값부터 확인. 인라인 COM 코드 작성 시: 절대 경로만 전달(상대 경로는 열기 실패), finally에서 Quit 보장, 작업 후 잔존 Hwp.exe 확인(파일 잠금 예방)
-   - **렌더링 검증 (2026. 7. 17. 추가)**: 변환본(.hwp→hwpx) 또는 재패키징(unpack/pack) 베이스를 편집한 산출물은 `scripts/render_check.py 결과.hwpx --reference 베이스.hwpx` 통과가 필수 — COM 쪽수 대조 + PDF 내보내기 → 논리 텍스트와의 순서 정합·역순 문자열·원문자 개체 잔재를 기계 검사. "열림 검사"는 렌더링 붕괴를 못 잡는다 (→ 근거: hwpx SKILL.md 「실패 이력」 2026. 7. 17.). 네이티브 hwpx 베이스의 일반 편집은 기존 검사로 충분하므로 제외
-   - **셀 폭 초과 육안 검증 (2026. 8. 20. 추가, 필수)**: 표 셀에 슬롯 예산(`slots.json`의 `max_chars`)을 넘는 텍스트를 넣었으면 **PDF로 내보내 이미지로 직접 본다** — `render_check.py 결과.hwpx --keep-pdf out.pdf` 후 PyMuPDF(Python312에 설치됨)로 PNG 렌더 → Read 도구로 판독. validate·page_guard·render_check는 **쪽수만 보므로 셀 안 줄바꿈을 못 잡는다**. `--allow-over-budget`은 **`--verified-by-render`와 짝으로만 동작한다**(2026. 8. 20. 기계화 — 단독 사용은 거부되고, 묵인된 초과분은 `WARNING`으로 전부 출력되니 보고에 옮긴다). 예산 검사를 끄는 것이지 폭이 늘어나는 게 아니다. 예산을 넘겼는데 축약이 불가능하면 넘기지 말고 **사용자에게 판단을 요청**한다(셀 폭을 넓힐지, 문구를 바꿀지). → 근거: hwpx SKILL.md 「실패 이력」 2026. 8. 20.(v2) 및 2026. 7. 18.
-7. 규칙 검증(gonmun_lint·content_guard) 최소셋: 날짜 형식·항목부호 순서(자동 수정) / **날짜-요일 정합은 gonmun_lint(DATE_WEEKDAY)가 기계 검증** — LLM의 요일 계산은 신뢰하지 않는다 / 붙임 언급 수 = 실제 첨부 수(불일치 보고) / **기존 문서를 재활용한 작업이면 content_guard forbid에 직전 문서의 고유 명칭(행사명·강사명·기관명)과 본문에 박힌 옛 날짜(배부일·시행일·서명일)를 반드시 넣어 복사 잔재 검사** (→ 근거: hwpx SKILL.md 「실패 이력」 2026. 7. 7. · 2026. 7. 18.)
+   - **렌더링 검증**: 변환본(.hwp→hwpx) 또는 재패키징(unpack/pack) 베이스를 편집한 산출물은 `scripts/render_check.py 결과.hwpx --reference 베이스.hwpx` 통과가 필수 — COM 쪽수 대조 + PDF 내보내기 → 논리 텍스트와의 순서 정합·역순 문자열·원문자 개체 잔재를 기계 검사 (근거: 7. 17.). 네이티브 hwpx 베이스의 일반 편집은 기존 검사로 충분하므로 제외
+   - **셀 폭 초과 육안 검증 (필수)**: 표 셀에 슬롯 예산(`slots.json`의 `max_chars`)을 넘는 텍스트를 넣었으면 **PDF로 내보내 이미지로 직접 본다** — `render_check.py 결과.hwpx --keep-pdf out.pdf` 후 PyMuPDF로 PNG 렌더 → Read 도구로 판독. `--allow-over-budget`은 **`--verified-by-render`와 짝으로만 동작**하고(기계 강제) 묵인분은 `WARNING`으로 출력되니 보고에 옮긴다. 예산 검사를 끄는 것이지 폭이 늘어나는 게 아니다. 축약이 불가능하면 넘기지 말고 **사용자에게 판단을 요청**한다(셀 폭을 넓힐지, 문구를 바꿀지). (근거: 8. 20. v2 · 7. 18.)
+7. 규칙 검증(gonmun_lint·content_guard) 최소셋: 날짜 형식·항목부호 순서(자동 수정) / **날짜-요일 정합은 gonmun_lint(DATE_WEEKDAY)가 기계 검증** — LLM의 요일 계산은 신뢰하지 않는다 / 붙임 언급 수 = 실제 첨부 수(불일치 보고) / **기존 문서를 재활용한 작업이면 content_guard forbid에 직전 문서의 고유 명칭(행사명·강사명·기관명)과 본문에 박힌 옛 날짜(배부일·시행일·서명일)를 반드시 넣어 복사 잔재 검사** (근거: 7. 7.·7. 18.)
    - gonmun_lint는 항상 `.claude/skills/hwpx/scripts/gonmun_lint.py` 사본을 실행한다 (폴백 사본은 2026. 7. 24. 주력 사본으로 1회 동기화됨 — 규칙은 재발산 대비로 유지, 주력 사본이 정본)
    - **관련번호 인용 대조**: `1. 관련:`의 `기관-번호(YYYY. M. D.)`는 실존 문서에서 확인된 값만 쓴다 — W2는 받은 공문 원문에서, 가통 배부·후속 공문은 선행 자교 공문에서(`scripts/related_lookup.py --doc <번호>`로 상류·하류 인용 기계 조회, `--chain`으로 전체 체인, `--search`로 키워드 검색), 규정 근거는 상급기관 번호 병기 가능. 인용 날짜는 그 문서의 **시행일**(결재일과 다를 수 있음, 6487 사례). 스크립트가 찾지 못하면(exit 1) 임의 기입하지 말고 사용자에게 질문 — received/·sent/도 비어 있으면 원본 요청
 8. 원본이 있는 작업이면 kordoc compare_documents로 신구대조 생성
@@ -95,7 +96,7 @@
 ## 실패 처리
 - 동일 단계 **2회 실패 시 자동 시도 중단**, 시도 이력과 함께 사용자에게 보고.
 - kordoc 파싱 실패 → 포맷 변환 후 재시도 → jkf87 변환기 경유
-- **인터프리터 고정 (2026. 8. 20. 실측)**: 스킬·프로젝트 스크립트는 맨 `python`/`python3`가 아니라 `C:\Users\22\AppData\Local\Programs\Python\Python312\python.exe`로 실행한다. 이 PC의 PATH에서 `python`·`python3`·`py`는 전부 `textbook_wiki/.venv`로 해석되고 그 venv에는 **pywin32·python-hwpx가 없어** `--hancom`·`render_check.py`·`create_document.py`가 조용히 실패한다 (8. 20. 가통 작업에서 실제 발생). 다른 인터프리터로 돌렸다면 보고에 명시
+- **인터프리터 고정**: 스킬·프로젝트 스크립트는 맨 `python`이 아니라 `C:\Users\22\AppData\Local\Programs\Python\Python312\python.exe`로 실행한다. PATH의 `python`·`python3`·`py`는 전부 `textbook_wiki/.venv`이고 **pywin32·python-hwpx가 없어** `--hancom`·`render_check.py`·`create_document.py`가 조용히 실패한다 (근거: 8. 20.). 다른 인터프리터로 돌렸다면 보고에 명시
 - kordoc MCP 도구가 목록에 없거나 호출이 연결 오류로 실패하면: ① HWPX 읽기는 `.claude/skills/hwpx/scripts/text_extract.py --format markdown`으로 대체, ② PDF는 Read 도구로 직접 판독, ③ 셀 패치는 hwpx 스킬 `edit_hwpx.py --cell/--slot-json`으로 대체, ④ diff는 두 파일의 text_extract 결과 비교로 대체하고 보고에 'kordoc 미사용' 명시
 - 스캔 PDF → OCR → 실패 시 이미지로 직접 판독
 - kordoc skipped[] 발생 → 해당 항목만 Canine89 재시도 → 전체 재생성
@@ -111,7 +112,7 @@
 프로즈 규칙은 조언이고, 어기면 대가가 큰 규칙은 훅으로 강제한다. 설정: `.claude/settings.json`
 - **PreToolUse** `protect_files.py`: knowledge/·docs/ **기존 파일 덮어쓰기** 차단(신규 파일 생성은 허용 — 환류 저장용, 금지 규칙 4), 위험 셸 명령 차단
 - **PostToolUse** `audit_log.py`: 파일 생성·수정을 audit.jsonl에 자동 기록
-- **Stop** `stop_validator.py`: `scripts/validate_pipeline.py`가 존재하면 턴 종료 전 실행. 실패 시 차단 → Self-Correction 루프, **2회 초과 시 차단 해제 + 사용자 보고**. **2026. 7. 24. 활성화됨** — validate_pipeline.py는 `output/` 변경분만 구조 validate + gonmun_lint로 빠르게 검사한다 (기존 산출물은 기준선만 기록, 이미 보고된 실패 파일은 변경 전까지 재차단하지 않음, 상태: `logs/.validate_state.json`). COM 실열림·render_check 등 느린 검사는 대화 중 파이프라인 담당
+- **Stop** `stop_validator.py` (2026. 7. 24. 활성): 턴 종료 전 `validate_pipeline.py`가 `output/` **변경분만** 구조 validate + gonmun_lint. 실패 시 차단 → Self-Correction, **2회 초과 시 차단 해제 + 사용자 보고**. 상태는 `logs/.validate_state.json`. COM 실열림·render_check 등 느린 검사는 대화 중 파이프라인 담당
 - **전역 훅(2026. 7. 11.)**: `C:\Users\22\.claude\hooks\hwp_doc_guard.py`가 user settings.json에 등록됨 — 프로젝트 밖 세션(텔레그램 경유 홈 세션 등)에서도 보호 폴더 차단(pre)과 audit.jsonl 자동 기록(post)을 경로 감지로 강제. 프로젝트 안 세션에서는 이중 기록을 피하려고 post가 스스로 건너뜀
 - Stop 훅 수정 시 무한 루프 방지 로직(stop_hook_active, 시도 카운터)을 제거하지 않는다
 
