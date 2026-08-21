@@ -8,7 +8,8 @@
 ## 확정된 환경
 - Windows + 한글 설치됨 (검토 시 한글 열람 가능)
 - **최종 제출 포맷: HWPX**
-- **MVP 성공 기준 (2026. 7. 24. 재개정)**: W1(신규) 5건에 대해 사용자가 검토 후 **동의(approved) + 5점 만점 평가**를 남기면 MVP 달성. W2(회신)는 실제 수신 공문 빈도가 낮아 5건 충족이 비현실적이므로 기준에서 제외한다 — 검토·기록(`--type W2`)은 계속하되 MVP 판단에는 반영하지 않는다. 발송 여부는 무관 — 발송은 항상 사람이 하며 에이전트가 확인할 방법도 없다. `scripts/log_review.py --file <경로> --type W1|W2 --approved yes/no --score 1-5`로 기록, `--summary`로 누적 현황 확인 (설계도-v4의 옛 기준 문구는 훅 보호로 미갱신 — 여기가 최신)
+- **검토 기록 (필수)**: 사용자 검토 결과는 `scripts/log_review.py --file <경로> --type W1|W2 --approved yes/no --score 1-5`로 즉시 기록하고 `--summary`로 누적 확인한다. 발송 여부는 무관 — 발송은 항상 사람이 한다
+- **MVP는 2026. 7. 18. 달성** (W1 5건 동의 기준, 현재 동의 11건·평균 4.7점). 기준 정의·경과는 `logs/review_log.jsonl`과 git `7e9adfd` 참조 — 이제 판단할 것이 없으므로 여기서는 다루지 않는다
 
 ## 도구 (역할 → 어댑터)
 | 역할 | 도구 | 용도 |
@@ -59,7 +60,7 @@
    - **슬롯 템플릿 5종 (2026. 7. 15. 승격, 8. 20. 회신형 추가)**: `templates/가정통신문/`(일반 가통) · `templates/가정통신문-회신형/`(**참가·불참 + 보호자 서명 회신란이 있는 가통 — 회신이 필요하면 일반 가통 대신 반드시 이것**) · `templates/가정통신문-고사안내/`(고사 안내 가통, 표 구조 다르면 재생성 경로) · `templates/성립전예산요구/`(기안문 본문) · `templates/회의록-교과협의회/`(고사 출제 협의). 각 폴더 README의 슬롯 매핑·주의사항을 따라 `edit_hwpx.py --slot-json`으로 채운다 — 마크다운 스켈레톤보다 우선 (index.md 매핑 표와 동기화됨, 2026. 7. 24. 파생물 화이트리스트로 훅 차단 해소)
 2. 초안 작성 (마크다운) → 사용자 확인
 3. Canine89로 HWPX 생성 — 본문 요약(일시·장소·대상 등)과 첨부 상세는 **한 값 소스에서 양쪽에 주입**한다 (공유필드 정합, 세트 md의 `공유필드:` 참조). 슬롯 템플릿(`--slot-json`) 경로는 단일 소스 주입만으로 정합이 구조적으로 보장되므로 사후 검사 불필요
-   - **(2026. 7. 15. 삭제, D2)**: "생성 후 값 일치를 확인한다"는 별도 사후 검사 문구는 삭제한다. 실행·적발 기록이 감사 로그·git 이력·검토 환류 전체에서 0건이었고, 규칙 기원도 실패 사례가 아닌 코퍼스 구조 관찰(3220·4828)에 따른 예방적 도입으로 확인됐다 (근거: 4소스 수색 워크플로, 2026. 7. 15.). 실측된 본문↔첨부 발산(5458 요일, 5042 학년도)은 이 검사가 아니라 각각 DATE_WEEKDAY·학년도 대조 규칙이 담당한다.
+   - **본문↔첨부 값 일치의 별도 사후 검사는 두지 않는다** (2026. 7. 15. 삭제, D2). 실측된 발산(5458 요일·5042 학년도)은 이 검사가 아니라 DATE_WEEKDAY·학년도 대조 규칙이 담당한다. 삭제 근거 전문은 git `939b2b4`
 4. Validator 파이프라인 통과
 5. `output/`에 저장 + OneDrive `작업 보고용` 동시 복사 + 검토 요청
 6. 사용자가 검토 결과(동의 여부·5점 평가)를 알려주면 `scripts/log_review.py`로 즉시 기록
@@ -99,19 +100,8 @@
 - 스캔 PDF → OCR → 실패 시 이미지로 직접 판독
 - kordoc skipped[] 발생 → 해당 항목만 Canine89 재시도 → 전체 재생성
 
-## 폴더 구조 (최소 시작, 필요 시 확장)
-```
-knowledge/
-├── examples/     # 잘 쓴 공문 + 검토 통과본 환류 (MD 변환본 병행)
-├── templates/    # 반복 양식 (슬롯 태깅 완료: 가정통신문·성립전예산요구·가정통신문-고사안내·회의록)
-├── reference/    # 기초 시간표·예산 사업관리카드 등 기계 조회 원본+파생 데이터
-├── sent/  received/  phrases.md   # 쌓이는 대로
-output/           # 산출물 (검토 대기)
-logs/audit.jsonl     # 감사 로그
-logs/review_log.jsonl  # 검토 동의·점수 기록 (scripts/log_review.py)
-docs/             # 설계도 v4
-scripts/          # 기계화 도구 (LLM 미개입 조회·검증)
-```
+## 폴더 구조
+`knowledge/`(**examples** 검토 통과본 환류·MD 병행 / **templates** 슬롯 양식 / **reference** 시간표·사업관리카드 원본+파생 / sent·received·phrases.md) · `output/`(산출물, 검토 대기) · `logs/`(audit.jsonl 감사, review_log.jsonl 검토 기록) · `docs/`(설계도 v4) · `scripts/`(기계화 도구). 세부는 `ls`로 확인한다.
 
 ## Audit Log
 주요 액션(파싱·초안·생성·검증·자기교정)마다 `logs/audit.jsonl`에 한 줄:
@@ -122,7 +112,6 @@ scripts/          # 기계화 도구 (LLM 미개입 조회·검증)
 - **PreToolUse** `protect_files.py`: knowledge/·docs/ **기존 파일 덮어쓰기** 차단(신규 파일 생성은 허용 — 환류 저장용, 금지 규칙 4), 위험 셸 명령 차단
 - **PostToolUse** `audit_log.py`: 파일 생성·수정을 audit.jsonl에 자동 기록
 - **Stop** `stop_validator.py`: `scripts/validate_pipeline.py`가 존재하면 턴 종료 전 실행. 실패 시 차단 → Self-Correction 루프, **2회 초과 시 차단 해제 + 사용자 보고**. **2026. 7. 24. 활성화됨** — validate_pipeline.py는 `output/` 변경분만 구조 validate + gonmun_lint로 빠르게 검사한다 (기존 산출물은 기준선만 기록, 이미 보고된 실패 파일은 변경 전까지 재차단하지 않음, 상태: `logs/.validate_state.json`). COM 실열림·render_check 등 느린 검사는 대화 중 파이프라인 담당
-- 활성화 순서: 세션 1(관통 테스트)은 훅 없이도 가능 → `python scripts/log_review.py --summary`로 W1 5건 동의 확인되면(MVP 달성, 2026. 7. 24. 완화 기준) validate_pipeline.py 작성으로 Stop 루프 활성화 → W1·W2를 `.claude/skills/` 커맨드로 승격 — **전 단계 완료 (2026. 7. 24.)**: Stop 루프 활성 + `/w1`·`/w2` 스킬 승격
 - **전역 훅(2026. 7. 11.)**: `C:\Users\22\.claude\hooks\hwp_doc_guard.py`가 user settings.json에 등록됨 — 프로젝트 밖 세션(텔레그램 경유 홈 세션 등)에서도 보호 폴더 차단(pre)과 audit.jsonl 자동 기록(post)을 경로 감지로 강제. 프로젝트 안 세션에서는 이중 기록을 피하려고 post가 스스로 건너뜀
 - Stop 훅 수정 시 무한 루프 방지 로직(stop_hook_active, 시도 카운터)을 제거하지 않는다
 
