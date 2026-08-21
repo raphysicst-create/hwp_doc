@@ -923,15 +923,28 @@ def preflight_text_budget(
     cells: Iterable[CellTarget],
     paragraphs: Iterable[ParagraphTarget],
     max_hangul_run: int,
-) -> None:
+    *,
+    allow_over_budget: bool = False,
+    render_verified: bool = False,
+) -> list[str]:
+    """예산·품질 검사. 통과하면 (묵인된) 예산 초과 목록을 돌려준다.
+
+    2026. 8. 20. 변경: 예전에는 --allow-over-budget이 이 함수 호출 자체를 건너뛰어
+    품질 검사(붙여쓴 한글, 편집 불가 문단)까지 함께 꺼졌고, 초과한 셀이 무엇인지
+    아무 기록도 남지 않았다. 8/20 가통 작업에서 이 플래그를 9회 사용한 끝에
+    셀 폭 초과가 렌더링에서 줄바꿈으로 드러나 검토 4점 반려가 났다.
+    이제 검사는 항상 돌고, 예산 초과만 --allow-over-budget으로 묵인할 수 있으며,
+    그마저도 --verified-by-render로 렌더 확인 사실을 밝혀야 통과한다.
+    """
     errors: list[str] = []
+    budget_errors: list[str] = []
 
     for old, new in replacements.items():
         errors.extend(_quality_errors(f"--replace {old!r}", new, max_hangul_run))
         old_len = _normalized_len(old)
         new_len = _normalized_len(new)
         if new_len > old_len:
-            errors.append(
+            budget_errors.append(
                 f"치환값 글자 수 초과: {old!r}({old_len}) -> {new!r}({new_len})"
             )
 
@@ -954,7 +967,7 @@ def preflight_text_budget(
             )
             continue
         if new_len > max_chars:
-            errors.append(
+            budget_errors.append(
                 f"셀 입력값 글자 수 초과: table={cell.table_index}, "
                 f"row={cell.row}, col={cell.col}, max={max_chars}, "
                 f"input={new_len}, text={cell.text!r}"
@@ -986,13 +999,38 @@ def preflight_text_budget(
             errors.append(f"문단 예산을 찾을 수 없습니다: index={paragraph.index}")
             continue
         if new_len > max_chars:
-            errors.append(
+            budget_errors.append(
                 f"문단 입력값 글자 수 초과: index={paragraph.index}, "
                 f"max={max_chars}, input={new_len}, text={paragraph.text!r}"
             )
 
+    # 품질 오류(붙여쓴 한글, 편집 불가 문단, 예산 미확인 셀)는 어떤 플래그로도 우회되지 않는다.
     if errors:
-        raise SystemExit("입력 전 글자수 예산 검사 실패:\n - " + "\n - ".join(errors))
+        raise SystemExit(
+            "입력 전 글자수 예산 검사 실패:\n - " + "\n - ".join(errors + budget_errors)
+        )
+
+    if not budget_errors:
+        return []
+
+    if not allow_over_budget:
+        raise SystemExit(
+            "입력 전 글자수 예산 검사 실패:\n - " + "\n - ".join(budget_errors)
+        )
+
+    if not render_verified:
+        raise SystemExit(
+            "예산 초과를 --allow-over-budget으로 넘기려면 --verified-by-render가 함께 필요합니다.\n"
+            " - " + "\n - ".join(budget_errors) + "\n\n"
+            "--allow-over-budget은 예산 '검사'를 끄는 것이지 셀 폭이 넓어지는 게 아닙니다.\n"
+            "먼저 렌더 이미지로 셀 안 줄바꿈이 없는지 눈으로 확인하십시오:\n"
+            "  render_check.py <결과>.hwpx --keep-pdf out.pdf  ->  PyMuPDF로 PNG 렌더 -> 판독\n"
+            "확인했으면 --verified-by-render를 붙여 다시 실행하십시오.\n"
+            "축약이 불가능하다면 넘기지 말고 셀 폭 확대나 행 추가를 사용자에게 요청하십시오\n"
+            "(근거: hwpx SKILL.md 「실패 이력」 2026. 8. 20. v2·v3)."
+        )
+
+    return budget_errors
 
 
 def _validate_input(zf: ZipFile) -> None:
@@ -1099,7 +1137,14 @@ def main() -> int:
     parser.add_argument(
         "--allow-over-budget",
         action="store_true",
-        help="입력 전 글자수 예산 검사를 우회",
+        help="글자수 예산 초과를 묵인 (--verified-by-render 필수). "
+        "품질 검사는 이 플래그로 꺼지지 않는다",
+    )
+    parser.add_argument(
+        "--verified-by-render",
+        action="store_true",
+        help="예산 초과 셀을 PDF 렌더 이미지로 직접 확인해 줄바꿈이 없음을 검증했음. "
+        "--allow-over-budget과 짝으로만 쓴다",
     )
     args = parser.parse_args()
 
@@ -1122,14 +1167,22 @@ def main() -> int:
         )
         return 2
 
-    if not args.allow_over_budget:
-        preflight_text_budget(
-            args.input,
-            replacements,
-            cells,
-            paragraphs,
-            args.max_hangul_run,
+    if args.verified_by_render and not args.allow_over_budget:
+        print(
+            "Error: --verified-by-render는 --allow-over-budget과 함께만 씁니다.",
+            file=sys.stderr,
         )
+        return 2
+
+    over_budget = preflight_text_budget(
+        args.input,
+        replacements,
+        cells,
+        paragraphs,
+        args.max_hangul_run,
+        allow_over_budget=args.allow_over_budget,
+        render_verified=args.verified_by_render,
+    )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     text_changes, cell_changes, paragraph_changes = _pack_from_original(
@@ -1139,6 +1192,14 @@ def main() -> int:
         cells,
         paragraphs,
     )
+
+    if over_budget:
+        print(
+            "WARNING: 예산 초과를 렌더 확인 후 묵인했습니다 "
+            f"({len(over_budget)}건) — 보고에 반드시 명시하십시오:"
+        )
+        for item in over_budget:
+            print(f"  - {item}")
 
     print(f"EDITED: {args.output}")
     print(f"  text replacements applied: {text_changes}")

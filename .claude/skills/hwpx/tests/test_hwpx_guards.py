@@ -425,5 +425,77 @@ class HwpxGuardTests(unittest.TestCase):
         self.assertAlmostEqual(0.5, ratio)
 
 
+class AllowOverBudgetGateTests(unittest.TestCase):
+    """--allow-over-budget이 조용한 off 스위치가 되지 않는지 (2026. 8. 20.).
+
+    8/20 가통 작업에서 이 플래그를 9회 사용한 끝에 셀 폭 초과가 렌더링 줄바꿈으로
+    드러나 검토 4점 반려가 났다. 그때는 플래그가 preflight 호출 자체를 건너뛰어
+    초과한 셀이 무엇인지 기록조차 남지 않았다.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        project = ROOT.parents[2]
+        candidates = sorted(
+            (project / "knowledge" / "templates").glob("*/양식.hwpx")
+        )
+        if not candidates:
+            raise unittest.SkipTest("슬롯 템플릿을 찾을 수 없습니다")
+        cls.template = candidates[0]
+        budgets = edit_hwpx._budget_cells_by_coord(cls.template)
+        sized = [(k, v) for k, v in budgets.items() if v > 0]
+        if not sized:
+            raise unittest.SkipTest("예산이 있는 셀이 없습니다")
+        (table, row, col, _), cls.max_chars = min(sized, key=lambda kv: kv[1])
+        cls.over = edit_hwpx.CellTarget(
+            table, row, col, "가" * (cls.max_chars + 12)
+        )
+
+    def _preflight(self, **kwargs):
+        return edit_hwpx.preflight_text_budget(
+            self.template, {}, [self.over], [], 24, **kwargs
+        )
+
+    def test_over_budget_blocks_without_flags(self) -> None:
+        with self.assertRaises(SystemExit) as cm:
+            self._preflight()
+        self.assertIn("셀 입력값 글자 수 초과", str(cm.exception))
+
+    def test_allow_over_budget_alone_still_blocks(self) -> None:
+        with self.assertRaises(SystemExit) as cm:
+            self._preflight(allow_over_budget=True)
+        self.assertIn("--verified-by-render", str(cm.exception))
+
+    def test_render_verified_alone_still_blocks(self) -> None:
+        with self.assertRaises(SystemExit):
+            self._preflight(render_verified=True)
+
+    def test_both_flags_pass_but_report_the_overage(self) -> None:
+        reported = self._preflight(
+            allow_over_budget=True, render_verified=True
+        )
+        self.assertEqual(1, len(reported))
+        self.assertIn("셀 입력값 글자 수 초과", reported[0])
+
+    def test_quality_guard_is_never_bypassed(self) -> None:
+        glued = edit_hwpx.CellTarget(
+            self.over.table_index,
+            self.over.row,
+            self.over.col,
+            "붙여쓴한글을아주길게이어서품질검사를건드려본다",
+        )
+        with self.assertRaises(SystemExit) as cm:
+            edit_hwpx.preflight_text_budget(
+                self.template,
+                {},
+                [glued],
+                [],
+                12,
+                allow_over_budget=True,
+                render_verified=True,
+            )
+        self.assertIn("띄어쓰기 없는 한글 문자열", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
