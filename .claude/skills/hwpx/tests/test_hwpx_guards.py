@@ -25,7 +25,46 @@ from office import pack as office_pack  # noqa: E402
 from office import unpack as office_unpack  # noqa: E402
 
 NS = {"hp": "http://www.hancom.co.kr/hwpml/2011/paragraph"}
-FIXTURE = ROOT / "251211_2026년_고용노동부_업무보고_보도자료(수정).hwpx"
+# fixture는 저장소에 커밋된 파일이어야 한다. 2026. 8. 21.까지는 저장소에 없는
+# 보도자료 hwpx를 가리키고 있어서 이 파일의 테스트 10건이 클린 체크아웃에서
+# 항상 실패했다(해당 파일은 한 번도 커밋된 적이 없다). 교외체험학습 양식은
+# 26KB로 가볍고, 문단 0이 컨테이너이며 표 5개·hp:t 자식 컨트롤·linesegarray를
+# 모두 갖춰 아래 검사들이 요구하는 구조를 만족한다.
+FIXTURE = (
+    ROOT.parents[2]
+    / "knowledge"
+    / "examples"
+    / "(화동중학교-2195 (첨부)) 1. 교외체험학습양식_화동중.hwp.hwpx"
+)
+
+# fixture 안에 실존하는 낱말. 같은 길이로 바꾸므로 예산에 걸리지 않는다.
+REPLACEMENT = {"보호자": "양육자"}
+
+# 편집 대상 문단. 47은 단일 run이다. 76은 높이 1000/1100이 섞여 있고 강조 run도
+# 2개 있어서 "강조가 아닌 본문 지배 서식을 고르는가"가 실제로 변별된다 —
+# 전 run이 같은 서식인 문단을 쓰면 그 단언은 항상 참이라 무의미하다.
+SINGLE_RUN_PARAGRAPH = 47
+MIXED_STYLE_PARAGRAPH = 76
+
+# 각 문단의 예산(49자·27자) 안에 들어가는 시험용 문장.
+BODY_SENTENCE = "교외체험학습 신청서는 출발 전에 제출한다."
+MIXED_SENTENCE = "양육자가 인솔 책임을 진다."
+# 띄어쓰기 없이 이어진 한글 — 품질 가드가 잡아야 한다.
+GLUED_SENTENCE = "교외체험학습신청서를출발전에제출하고결과보고서도함께낸다"
+
+
+def plain_run_choice(hwpx_path: Path, index: int):
+    """편집 전 원본에서 구현이 고를 run과 그 서식 표를 되돌려준다.
+
+    기대값을 문서에 하드코딩하지 않기 위한 헬퍼. 예전에는 charPrIDRef를
+    "58"·"128"처럼 박아둬서 fixture를 바꾸면 곧바로 깨졌다.
+    """
+    with ZipFile(hwpx_path, "r") as zf:
+        char_styles = edit_hwpx._parse_char_styles(zf.read("Contents/header.xml"))
+        section = edit_hwpx._parse_xml(zf.read("Contents/section0.xml")).getroot()
+    paragraph = section.xpath(".//hp:p", namespaces=NS)[index]
+    node = edit_hwpx._best_text_node_for_plain_rewrite(paragraph, char_styles)
+    return node.getparent().get("charPrIDRef"), char_styles, paragraph
 
 
 def hp_t_child_count(hwpx_path: Path) -> int:
@@ -160,7 +199,7 @@ class HwpxGuardTests(unittest.TestCase):
             edit_hwpx._pack_from_original(
                 FIXTURE,
                 out,
-                {"고용노동부": "미국노동부"},
+                REPLACEMENT,
                 [],
                 [],
             )
@@ -177,7 +216,7 @@ class HwpxGuardTests(unittest.TestCase):
             edit_hwpx._pack_from_original(
                 FIXTURE,
                 out,
-                {"고용노동부": "미국노동부"},
+                REPLACEMENT,
                 [],
                 [],
             )
@@ -228,7 +267,7 @@ class HwpxGuardTests(unittest.TestCase):
             edit_hwpx._pack_from_original(
                 FIXTURE,
                 out,
-                {"고용노동부": "미국노동부"},
+                REPLACEMENT,
                 [],
                 [],
             )
@@ -257,12 +296,13 @@ class HwpxGuardTests(unittest.TestCase):
                 [],
                 [
                     edit_hwpx.ParagraphTarget(
-                        18,
-                        "미국노동부는 현장 중심의 노동정책을 추진한다.",
+                        SINGLE_RUN_PARAGRAPH,
+                        BODY_SENTENCE,
                     )
                 ],
                 24,
             )
+            expected_id, _, _ = plain_run_choice(FIXTURE, SINGLE_RUN_PARAGRAPH)
             edit_hwpx._pack_from_original(
                 FIXTURE,
                 out,
@@ -270,15 +310,15 @@ class HwpxGuardTests(unittest.TestCase):
                 [],
                 [
                     edit_hwpx.ParagraphTarget(
-                        18,
-                        "미국노동부는 현장 중심의 노동정책을 추진한다.",
+                        SINGLE_RUN_PARAGRAPH,
+                        BODY_SENTENCE,
                     )
                 ],
             )
 
             with ZipFile(out, "r") as zf:
                 root = etree.fromstring(zf.read("Contents/section0.xml"))
-            paragraph = root.xpath(".//hp:p", namespaces=NS)[18]
+            paragraph = root.xpath(".//hp:p", namespaces=NS)[SINGLE_RUN_PARAGRAPH]
             filled_nodes = [
                 node
                 for node in paragraph.xpath(".//hp:t", namespaces=NS)
@@ -287,10 +327,13 @@ class HwpxGuardTests(unittest.TestCase):
             self.assertEqual(1, len(filled_nodes))
             filled_run = filled_nodes[0].getparent()
             self.assertEqual(
-                "미국노동부는 현장 중심의 노동정책을 추진한다.",
+                BODY_SENTENCE,
                 "".join(paragraph.xpath(".//hp:t//text()", namespaces=NS)),
             )
-            self.assertEqual("58", filled_run.get("charPrIDRef"))
+            # 고른 run의 서식을 패킹 단계가 그대로 옮겼는지 본다.
+            # (어떤 run을 고르는지가 옳은가는 아래 지배-서식 테스트 담당 —
+            #  기대값을 같은 함수로 유도하므로 이 단언만으로는 선택 규칙을 못 잡는다)
+            self.assertEqual(expected_id, filled_run.get("charPrIDRef"))
 
     def test_paragraph_rewrite_prefers_dominant_body_height(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -302,15 +345,23 @@ class HwpxGuardTests(unittest.TestCase):
                 [],
                 [
                     edit_hwpx.ParagraphTarget(
-                        12,
-                        "미국노동부는 워싱턴에서 새 노동정책 계획을 발표했다.",
+                        MIXED_STYLE_PARAGRAPH,
+                        MIXED_SENTENCE,
                     )
                 ],
             )
 
+            expected_id, char_styles, source_paragraph = plain_run_choice(
+                FIXTURE, MIXED_STYLE_PARAGRAPH
+            )
+            dominant = edit_hwpx._dominant_plain_height(
+                source_paragraph.xpath(".//hp:t", namespaces=NS), char_styles
+            )
+            self.assertIsNotNone(dominant, "문단에 본문 서식이 있어야 한다")
+
             with ZipFile(out, "r") as zf:
                 root = etree.fromstring(zf.read("Contents/section0.xml"))
-            paragraph = root.xpath(".//hp:p", namespaces=NS)[12]
+            paragraph = root.xpath(".//hp:p", namespaces=NS)[MIXED_STYLE_PARAGRAPH]
             filled_nodes = [
                 node
                 for node in paragraph.xpath(".//hp:t", namespaces=NS)
@@ -318,7 +369,14 @@ class HwpxGuardTests(unittest.TestCase):
             ]
             self.assertEqual(1, len(filled_nodes))
             filled_run = filled_nodes[0].getparent()
-            self.assertEqual("128", filled_run.get("charPrIDRef"))
+            self.assertEqual(expected_id, filled_run.get("charPrIDRef"))
+            # 이 테스트의 본론: 강조 서식이 아니라 본문 지배 서식을 골라야 한다.
+            chosen = char_styles[filled_run.get("charPrIDRef")]
+            self.assertTrue(
+                edit_hwpx._is_plain_body_style(chosen),
+                f"본문 서식이 아님: {chosen}",
+            )
+            self.assertEqual(dominant, chosen.height)
 
     def test_quality_guard_rejects_glued_korean_text(self) -> None:
         with self.assertRaises(SystemExit) as cm:
@@ -328,8 +386,8 @@ class HwpxGuardTests(unittest.TestCase):
                 [],
                 [
                     edit_hwpx.ParagraphTarget(
-                        18,
-                        "미국노동부는현장점검과공개보고를통해이행상황을지속관리한다",
+                        SINGLE_RUN_PARAGRAPH,
+                        GLUED_SENTENCE,
                     )
                 ],
                 12,
@@ -343,7 +401,7 @@ class HwpxGuardTests(unittest.TestCase):
                 FIXTURE,
                 {},
                 [],
-                [edit_hwpx.ParagraphTarget(0, "미국노동부 보도자료")],
+                [edit_hwpx.ParagraphTarget(0, "교외체험학습 신청서")],
                 24,
             )
 
